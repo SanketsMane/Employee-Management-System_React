@@ -8,6 +8,7 @@ const {
   getDashboardData,
   getLeaderboard,
   getEmployees,
+  getTeamMembers,
   getDepartments,
   getRoles
 } = require('../controllers/userController');
@@ -22,6 +23,7 @@ router.use(protect);
 // Public user operations (all authenticated users)
 router.get('/leaderboard', authorize('Admin', 'HR'), getLeaderboard);
 router.get('/employees', authorize('Admin', 'HR', 'Manager'), getEmployees);
+router.get('/team-members', getTeamMembers); // All authenticated users can view team members
 router.get('/departments', authorize('Admin', 'HR', 'Manager', 'Team Lead'), getDepartments);
 router.get('/roles', authorize('Admin', 'HR', 'Manager', 'Team Lead'), getRoles);
 router.get('/:id/dashboard', getDashboardData);

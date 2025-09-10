@@ -97,29 +97,117 @@ exports.register = async (req, res, next) => {
 
     // Send welcome email
     const welcomeHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #4f46e5;">Welcome to Employee Management System!</h1>
-        <p>Dear ${firstName} ${lastName},</p>
-        <p>Your account has been successfully created with the following details:</p>
-        <ul>
-          <li><strong>Employee ID:</strong> ${user.employeeId}</li>
-          <li><strong>Email:</strong> ${email}</li>
-          <li><strong>Role:</strong> ${role || 'Employee'}</li>
-          <li><strong>Department:</strong> ${department}</li>
-          <li><strong>Position:</strong> ${position}</li>
-        </ul>
-        <p>You can now log in to your dashboard and start using the system.</p>
-        <a href="${process.env.FRONTEND_URL}/login" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Login to Dashboard</a>
-        <br><br>
-        <p style="margin-top: 20px; color: #666;">Developed by Sanket Mane | Email: contactsanket1@gmail.com</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+        <div style="background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
+            <h1 style="color: #1f2937; margin: 0; font-size: 28px; font-weight: bold;">Welcome to FormoEMS! 🎉</h1>
+            <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 16px;">Your Account Registration Successful</p>
+          </div>
+
+          <!-- Welcome Message -->
+          <div style="margin-bottom: 25px;">
+            <h2 style="color: #059669; margin: 0 0 15px 0; font-size: 20px;">Hello ${firstName} ${lastName}! 👋</h2>
+            <p style="color: #374151; line-height: 1.6; margin: 0;">
+              Congratulations! Your account has been successfully created in our Employee Management System. 
+              You're now part of our digital workplace with the role of <strong>${role || 'Employee'}</strong>.
+            </p>
+          </div>
+
+          <!-- Account Information -->
+          <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #0ea5e9;">
+            <h3 style="color: #0c4a6e; margin: 0 0 15px 0; font-size: 18px;">📋 Your Account Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; font-weight: 600; color: #374151;">Employee ID:</td><td style="padding: 8px 0; color: #1f2937; font-weight: bold;">${user.employeeId}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600; color: #374151;">Full Name:</td><td style="padding: 8px 0; color: #1f2937;">${firstName} ${lastName}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600; color: #374151;">Email:</td><td style="padding: 8px 0; color: #1f2937;">${email}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600; color: #374151;">Role:</td><td style="padding: 8px 0; color: #1f2937; font-weight: 600;">${role || 'Employee'}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600; color: #374151;">Department:</td><td style="padding: 8px 0; color: #1f2937;">${department}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600; color: #374151;">Position:</td><td style="padding: 8px 0; color: #1f2937;">${position}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600; color: #374151;">Status:</td><td style="padding: 8px 0; color: #16a34a; font-weight: 600;">✅ Active & Ready</td></tr>
+            </table>
+          </div>
+
+          <!-- Account Status -->
+          <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #22c55e;">
+            <h3 style="color: #15803d; margin: 0 0 15px 0; font-size: 18px;">🎯 Account Status</h3>
+            <p style="color: #374151; line-height: 1.6; margin: 0;">
+              Your account is <strong style="color: #15803d;">Active and Ready</strong> to use! You can now access all the features 
+              available to your role. Your login credentials are the same email and password you used during registration.
+            </p>
+          </div>
+
+          <!-- Getting Started Guide -->
+          <div style="background-color: #fef7cd; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #f59e0b;">
+            <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 18px;">🚀 Getting Started</h3>
+            <ol style="color: #374151; line-height: 1.8; padding-left: 20px; margin: 0;">
+              <li><strong>Login:</strong> Use your email and password to access the dashboard</li>
+              <li><strong>Complete Profile:</strong> Update your profile information and preferences</li>
+              <li><strong>Explore Features:</strong> Discover attendance, leave management, and task sheets</li>
+              <li><strong>Security:</strong> Consider updating your password in settings for enhanced security</li>
+              <li><strong>Connect:</strong> Start collaborating with your team members</li>
+            </ol>
+          </div>
+
+          <!-- Features Available -->
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
+            <h3 style="color: #475569; margin: 0 0 15px 0; font-size: 18px;">🌟 Available Features</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="color: #374151; font-size: 14px;">✅ Dashboard Overview</div>
+              <div style="color: #374151; font-size: 14px;">✅ Attendance Tracking</div>
+              <div style="color: #374151; font-size: 14px;">✅ Leave Management</div>
+              <div style="color: #374151; font-size: 14px;">✅ Task & Worksheets</div>
+              <div style="color: #374151; font-size: 14px;">✅ Team Collaboration</div>
+              <div style="color: #374151; font-size: 14px;">✅ Profile Management</div>
+              <div style="color: #374151; font-size: 14px;">✅ Notifications</div>
+              <div style="color: #374151; font-size: 14px;">✅ Real-time Updates</div>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5174'}/login" 
+               style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+              🚀 Access Your Dashboard
+            </a>
+          </div>
+
+          <!-- Security Notice -->
+          <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; margin: 25px 0; border: 1px solid #fecaca;">
+            <p style="color: #991b1b; font-size: 14px; margin: 0; text-align: center;">
+              🔒 <strong>Security Tip:</strong> Keep your login credentials secure and never share them with others.
+            </p>
+          </div>
+
+          <!-- Support Information -->
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 25px 0;">
+            <p style="color: #64748b; font-size: 14px; margin: 0; text-align: center;">
+              📞 Need help getting started? Contact your HR department or system administrator<br>
+              📧 Technical support: contactsanket1@gmail.com
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+              Developed by Sanket Mane | FormoEMS Employee Management System<br>
+              © ${new Date().getFullYear()} FormoEMS. All rights reserved.
+            </p>
+          </div>
+        </div>
       </div>
     `;
 
-    await sendEmail({
-      email: user.email,
-      subject: 'Welcome to Employee Management System',
-      html: welcomeHtml
-    });
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: `Welcome to FormoEMS - Account Created Successfully! 🎉`,
+        html: welcomeHtml
+      });
+      console.log(`✅ Welcome email sent to new user: ${user.firstName} ${user.lastName} (${user.email})`);
+    } catch (emailError) {
+      console.log('Welcome email sending failed:', emailError.message);
+    }
 
     sendTokenResponse(user, 201, res);
   } catch (error) {
@@ -237,10 +325,15 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
   try {
+    console.log('📋 GET /auth/me request received');
+    console.log('User ID:', req.user?.id);
+    
     const user = await User.findById(req.user.id)
       .populate('manager', 'firstName lastName email')
       .populate('teamLead', 'firstName lastName email')
       .select('-password');
+
+    console.log('👤 User found:', user ? `${user.firstName} ${user.lastName}` : 'Not found');
 
     res.status(200).json({
       success: true,
@@ -249,6 +342,7 @@ exports.getMe = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('❌ Error in getMe:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -389,6 +483,10 @@ exports.changePassword = async (req, res, next) => {
 // @access  Private
 exports.updateProfile = async (req, res) => {
   try {
+    console.log('🔧 Profile update request received');
+    console.log('User:', req.user?.firstName, req.user?.lastName, '- Role:', req.user?.role);
+    console.log('Request body:', req.body);
+
     const {
       firstName,
       lastName,
@@ -398,16 +496,24 @@ exports.updateProfile = async (req, res) => {
       bio
     } = req.body;
 
+    // Validate required fields
+    if (!firstName || !lastName) {
+      return res.status(400).json({
+        success: false,
+        message: 'First name and last name are required'
+      });
+    }
+
     // Find user and update
     const user = await User.findByIdAndUpdate(
       req.user._id,
       {
-        firstName,
-        lastName,
-        phone,
-        address,
-        skills,
-        bio
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone?.trim() || '',
+        address: address?.trim() || '',
+        skills: Array.isArray(skills) ? skills : (skills ? skills.split(',').map(s => s.trim()) : []),
+        bio: bio?.trim() || ''
       },
       {
         new: true,
@@ -421,6 +527,8 @@ exports.updateProfile = async (req, res) => {
         message: 'User not found'
       });
     }
+
+    console.log('✅ Profile updated successfully for:', user.firstName, user.lastName);
 
     // Log profile update
     await Log.create({
@@ -439,9 +547,103 @@ exports.updateProfile = async (req, res) => {
       data: user
     });
   } catch (error) {
+    console.error('❌ Profile update error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Upload profile picture
+// @route   POST /api/auth/profile/picture
+// @access  Private
+exports.uploadProfilePicture = async (req, res) => {
+  try {
+    console.log('📸 Profile picture upload request received');
+    console.log('User:', req.user?.firstName, req.user?.lastName);
+    console.log('File:', req.file);
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    // Check if user exists
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // If using Cloudinary
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      const cloudinary = require('../config/cloudinary');
+      
+      // Upload to Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'profile_pictures',
+        transformation: [
+          { width: 300, height: 300, crop: 'fill', gravity: 'face' },
+          { quality: 'auto' }
+        ]
+      });
+
+      // Delete local file after upload
+      const fs = require('fs');
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+
+      // Update user profile picture
+      user.profilePicture = result.secure_url;
+    } else {
+      // Use local file storage
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      user.profilePicture = `${baseUrl}/uploads/${req.file.filename}`;
+    }
+
+    await user.save();
+
+    console.log('✅ Profile picture updated successfully');
+
+    // Log profile picture update
+    await Log.create({
+      user: user._id,
+      action: 'Profile Picture Update',
+      category: 'Profile',
+      details: 'User updated their profile picture',
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      success: true
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile picture updated successfully',
+      data: {
+        profilePicture: user.profilePicture
+      }
+    });
+  } catch (error) {
+    console.error('❌ Profile picture upload error:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file && req.file.path) {
+      const fs = require('fs');
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile picture',
       error: error.message
     });
   }

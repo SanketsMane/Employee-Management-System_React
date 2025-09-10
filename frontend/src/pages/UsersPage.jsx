@@ -73,7 +73,6 @@ const UsersPage = () => {
         }));
       }
     } catch (error) {
-      console.error('❌ Error fetching users:', error.response?.data || error.message);
       toast.error('Error fetching users');
     } finally {
       setLoading(false);

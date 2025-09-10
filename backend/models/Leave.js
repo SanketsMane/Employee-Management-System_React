@@ -54,6 +54,10 @@ const leaveSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  adminMessage: {
+    type: String,
+    trim: true
+  },
   attachments: [{
     name: String,
     url: String,

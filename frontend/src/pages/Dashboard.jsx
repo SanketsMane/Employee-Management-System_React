@@ -5,6 +5,7 @@ import { useWebSocket } from '../context/WebSocketContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import RealTimeStatus from '../components/RealTimeStatus';
+import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { 
   Clock, 
@@ -57,12 +58,12 @@ const Dashboard = () => {
     try {
       const response = await api.post('/attendance/clockin');
       if (response.data.success) {
-        alert('Clocked in successfully!');
+        toast.success('Clocked in successfully!');
         fetchDashboardData();
       }
     } catch (error) {
       console.error('Clock in error:', error);
-      alert(`Clock in failed: ${error.response?.data?.message || 'Please try again'}`);
+      toast.error(`Clock in failed: ${error.response?.data?.message || 'Please try again'}`);
     }
   };
 
@@ -70,12 +71,12 @@ const Dashboard = () => {
     try {
       const response = await api.put('/attendance/clockout');
       if (response.data.success) {
-        alert('Clocked out successfully!');
+        toast.success('Clocked out successfully!');
         fetchDashboardData();
       }
     } catch (error) {
       console.error('Clock out error:', error);
-      alert(`Clock out failed: ${error.response?.data?.message || 'Please try again'}`);
+      toast.error(`Clock out failed: ${error.response?.data?.message || 'Please try again'}`);
     }
   };
 
@@ -83,12 +84,12 @@ const Dashboard = () => {
     try {
       const response = await api.post('/attendance/break/start', { reason: 'Break' });
       if (response.data.success) {
-        alert('Break started!');
+        toast.success('Break started!');
         fetchDashboardData();
       }
     } catch (error) {
       console.error('Start break error:', error);
-      alert(`Start break failed: ${error.response?.data?.message || 'Please try again'}`);
+      toast.error(`Start break failed: ${error.response?.data?.message || 'Please try again'}`);
     }
   };
 
@@ -96,12 +97,12 @@ const Dashboard = () => {
     try {
       const response = await api.put('/attendance/break/end');
       if (response.data.success) {
-        alert('Break ended!');
+        toast.success('Break ended!');
         fetchDashboardData();
       }
     } catch (error) {
       console.error('End break error:', error);
-      alert(`End break failed: ${error.response?.data?.message || 'Please try again'}`);
+      toast.error(`End break failed: ${error.response?.data?.message || 'Please try again'}`);
     }
   };
 

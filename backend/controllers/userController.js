@@ -968,3 +968,84 @@ exports.getRoles = async (req, res) => {
     });
   }
 };
+
+// @desc    Get team members (for employees to view their colleagues)
+// @route   GET /api/users/team-members
+// @access  Private (All authenticated users)
+exports.getTeamMembers = async (req, res) => {
+  try {
+    const { 
+      department, 
+      search,
+      page = 1,
+      limit = 50
+    } = req.query;
+
+    const currentUser = req.user;
+    let query = { isActive: true };
+
+    // If user is Employee, only show users from same department
+    if (currentUser.role === 'Employee') {
+      query.department = currentUser.department;
+    }
+
+    // Department filter (for managers/hr/admin)
+    if (department && department !== 'all' && currentUser.role !== 'Employee') {
+      query.department = department;
+    }
+
+    // Search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+        { employeeId: searchRegex }
+      ];
+    }
+
+    // Pagination
+    const skip = (page - 1) * limit;
+
+    // Select limited fields for privacy
+    const selectFields = currentUser.role === 'Employee' 
+      ? 'firstName lastName employeeId role department position profilePicture isActive'
+      : 'firstName lastName email employeeId role department position joinDate phoneNumber profilePicture isActive';
+
+    const teamMembers = await User.find(query)
+      .select(selectFields)
+      .populate('manager', 'firstName lastName employeeId')
+      .sort({ firstName: 1, lastName: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await User.countDocuments(query);
+
+    // Add fullName for consistency
+    const formattedTeamMembers = teamMembers.map(member => ({
+      ...member.toObject(),
+      fullName: `${member.firstName} ${member.lastName}`
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Team members fetched successfully',
+      data: {
+        employees: formattedTeamMembers,
+        totalEmployees: total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: parseInt(page),
+        hasNextPage: skip + formattedTeamMembers.length < total,
+        hasPrevPage: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Get team members error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching team members',
+      error: error.message
+    });
+  }
+};

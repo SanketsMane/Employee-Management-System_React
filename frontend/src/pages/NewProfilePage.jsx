@@ -66,7 +66,6 @@ const ProfilePage = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
     }
@@ -87,7 +86,6 @@ const ProfilePage = () => {
         worksheets: worksheetsRes.data.data || []
       });
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     }
   };
 

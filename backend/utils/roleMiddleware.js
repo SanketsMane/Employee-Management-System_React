@@ -60,7 +60,14 @@ exports.protect = async (req, res, next) => {
 // Grant access to specific roles
 exports.authorize = (...roles) => {
   return (req, res, next) => {
+    console.log('🔐 Role authorization check');
+    console.log('Required roles:', roles);
+    console.log('User role:', req.user?.role);
+    console.log('User:', req.user ? `${req.user.firstName} ${req.user.lastName}` : 'No user');
+    
     if (!roles.includes(req.user.role)) {
+      console.log('❌ Authorization failed - role not in allowed list');
+      
       // Log unauthorized access attempt
       const log = new Log({
         user: req.user._id,
@@ -81,6 +88,8 @@ exports.authorize = (...roles) => {
         message: `User role ${req.user.role} is not authorized to access this route`
       });
     }
+    
+    console.log('✅ Authorization successful');
     next();
   };
 };

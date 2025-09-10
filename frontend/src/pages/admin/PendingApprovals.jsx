@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, Check, X, Clock, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
 import api from '../../lib/api';
+import toast from 'react-hot-toast';
 
 const PendingApprovals = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -47,14 +48,14 @@ const PendingApprovals = () => {
         setPendingUsers(prev => prev.filter(user => user._id !== userId));
         
         // Show success message
-        alert(`User ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+        toast.success(`User ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
       } else {
-        alert(response.data.message || `Error ${action}ing user`);
+        toast.error(response.data.message || `Error ${action}ing user`);
       }
     } catch (error) {
       console.error(`Error ${action}ing user:`, error);
       console.error('Error response:', error.response?.data);
-      alert(error.response?.data?.message || `Error ${action}ing user`);
+      toast.error(error.response?.data?.message || `Error ${action}ing user`);
     } finally {
       setProcessing(prev => ({ ...prev, [userId]: false }));
     }
@@ -215,7 +216,7 @@ const PendingApprovals = () => {
               <button
                 onClick={() => {
                   if (!rejectionReason.trim()) {
-                    alert('Please provide a rejection reason');
+                    toast.error('Please provide a rejection reason');
                     return;
                   }
                   handleApproval(user._id, 'reject', '', rejectionReason);

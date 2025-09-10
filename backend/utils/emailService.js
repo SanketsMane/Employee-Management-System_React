@@ -349,10 +349,227 @@ const initializeCronJobs = () => {
   console.log('Cron jobs initialized successfully');
 };
 
+// Send leave application notification to admins
+const sendLeaveApplicationEmail = async (admin, leave) => {
+  try {
+    const subject = `New Leave Application - ${leave.employee.firstName} ${leave.employee.lastName}`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">
+          New Leave Application Received
+        </h2>
+        
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #374151; margin-top: 0;">Employee Details</h3>
+          <p><strong>Name:</strong> ${leave.employee.firstName} ${leave.employee.lastName}</p>
+          <p><strong>Department:</strong> ${leave.employee.department}</p>
+          <p><strong>Role:</strong> ${leave.employee.role}</p>
+        </div>
+
+        <div style="background-color: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #ea580c; margin-top: 0;">Leave Details</h3>
+          <p><strong>Leave Type:</strong> ${leave.leaveType}</p>
+          <p><strong>Start Date:</strong> ${leave.startDate.toDateString()}</p>
+          <p><strong>End Date:</strong> ${leave.endDate.toDateString()}</p>
+          <p><strong>Total Days:</strong> ${leave.totalDays}</p>
+          <p><strong>Reason:</strong> ${leave.reason}</p>
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background-color: #ecfdf5; border-radius: 8px;">
+          <p style="margin: 0; color: #065f46;">
+            Please review this leave application and take appropriate action through the admin dashboard.
+          </p>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="font-size: 12px; color: #6b7280;">
+          This is an automated notification from the Employee Management System.
+        </p>
+      </div>
+    `;
+
+    const text = `
+      New Leave Application Received
+      
+      Employee: ${leave.employee.firstName} ${leave.employee.lastName}
+      Department: ${leave.employee.department}
+      Role: ${leave.employee.role}
+      
+      Leave Details:
+      - Type: ${leave.leaveType}
+      - Start Date: ${leave.startDate.toDateString()}
+      - End Date: ${leave.endDate.toDateString()}
+      - Total Days: ${leave.totalDays}
+      - Reason: ${leave.reason}
+      
+      Please review this leave application through the admin dashboard.
+    `;
+
+    await sendEmail({
+      email: admin.email,
+      subject,
+      message: text,
+      html
+    });
+
+    console.log(`✅ Leave application email sent to ${admin.firstName} ${admin.lastName}`);
+  } catch (error) {
+    console.error('❌ Error sending leave application email:', error);
+    throw error;
+  }
+};
+
+// Send leave status update to employee
+const sendLeaveUpdateEmail = async (employee, leave, status, approver, adminMessage = '', rejectionReason = '') => {
+  try {
+    const statusText = status === 'Approved' ? 'Approved' : 'Rejected';
+    const subject = `Leave Application ${statusText} - ${leave.leaveType}`;
+    
+    const statusColor = status === 'Approved' ? '#10b981' : '#ef4444';
+    const statusBg = status === 'Approved' ? '#ecfdf5' : '#fef2f2';
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: ${statusColor}; border-bottom: 2px solid ${statusColor}; padding-bottom: 10px;">
+          Leave Application ${statusText}
+        </h2>
+        
+        <div style="background-color: ${statusBg}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #374151; margin-top: 0;">Leave Details</h3>
+          <p><strong>Leave Type:</strong> ${leave.leaveType}</p>
+          <p><strong>Start Date:</strong> ${leave.startDate.toDateString()}</p>
+          <p><strong>End Date:</strong> ${leave.endDate.toDateString()}</p>
+          <p><strong>Total Days:</strong> ${leave.totalDays}</p>
+          <p><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
+        </div>
+
+        ${approver ? `
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #374151; margin-top: 0;">${statusText} by</h3>
+          <p><strong>Name:</strong> ${approver.firstName} ${approver.lastName}</p>
+          <p><strong>Role:</strong> ${approver.role}</p>
+          <p><strong>Date:</strong> ${new Date().toDateString()}</p>
+        </div>
+        ` : ''}
+
+        ${rejectionReason ? `
+        <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
+          <h3 style="color: #dc2626; margin-top: 0;">Rejection Reason</h3>
+          <p style="margin: 0;">${rejectionReason}</p>
+        </div>
+        ` : ''}
+
+        ${adminMessage ? `
+        <div style="background-color: #eff6ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+          <h3 style="color: #1d4ed8; margin-top: 0;">Additional Message</h3>
+          <p style="margin: 0;">${adminMessage}</p>
+        </div>
+        ` : ''}
+
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="font-size: 12px; color: #6b7280;">
+          This is an automated notification from the Employee Management System.
+        </p>
+      </div>
+    `;
+
+    const text = `
+      Leave Application ${statusText}
+      
+      Leave Details:
+      - Type: ${leave.leaveType}
+      - Start Date: ${leave.startDate.toDateString()}
+      - End Date: ${leave.endDate.toDateString()}
+      - Total Days: ${leave.totalDays}
+      - Status: ${statusText}
+      
+      ${approver ? `${statusText} by: ${approver.firstName} ${approver.lastName} (${approver.role})` : ''}
+      ${rejectionReason ? `Rejection Reason: ${rejectionReason}` : ''}
+      ${adminMessage ? `Additional Message: ${adminMessage}` : ''}
+    `;
+
+    await sendEmail({
+      email: employee.email,
+      subject,
+      message: text,
+      html
+    });
+
+    console.log(`✅ Leave ${status.toLowerCase()} email sent to ${employee.firstName} ${employee.lastName}`);
+  } catch (error) {
+    console.error(`❌ Error sending leave ${status.toLowerCase()} email:`, error);
+    throw error;
+  }
+};
+
+// Send leave cancellation notification
+const sendLeaveCancellationEmail = async (employee, leave) => {
+  try {
+    const subject = `Leave Application Cancelled - ${leave.leaveType}`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #6b7280; border-bottom: 2px solid #6b7280; padding-bottom: 10px;">
+          Leave Application Cancelled
+        </h2>
+        
+        <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #374151; margin-top: 0;">Cancelled Leave Details</h3>
+          <p><strong>Leave Type:</strong> ${leave.leaveType}</p>
+          <p><strong>Start Date:</strong> ${leave.startDate.toDateString()}</p>
+          <p><strong>End Date:</strong> ${leave.endDate.toDateString()}</p>
+          <p><strong>Total Days:</strong> ${leave.totalDays}</p>
+          <p><strong>Cancelled On:</strong> ${new Date().toDateString()}</p>
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background-color: #fff7ed; border-radius: 8px;">
+          <p style="margin: 0; color: #ea580c;">
+            Your leave application has been successfully cancelled. If you need to apply for leave again, please submit a new application.
+          </p>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="font-size: 12px; color: #6b7280;">
+          This is an automated notification from the Employee Management System.
+        </p>
+      </div>
+    `;
+
+    const text = `
+      Leave Application Cancelled
+      
+      Cancelled Leave Details:
+      - Type: ${leave.leaveType}
+      - Start Date: ${leave.startDate.toDateString()}
+      - End Date: ${leave.endDate.toDateString()}
+      - Total Days: ${leave.totalDays}
+      - Cancelled On: ${new Date().toDateString()}
+      
+      Your leave application has been successfully cancelled.
+    `;
+
+    await sendEmail({
+      email: employee.email,
+      subject,
+      message: text,
+      html
+    });
+
+    console.log(`✅ Leave cancellation email sent to ${employee.firstName} ${employee.lastName}`);
+  } catch (error) {
+    console.error('❌ Error sending leave cancellation email:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendEmail,
   sendGoodMorningEmail,
   sendWorksheetReminder,
   sendLeaveNotification,
+  sendLeaveApplicationEmail,
+  sendLeaveUpdateEmail,
+  sendLeaveCancellationEmail,
   initializeCronJobs
 };

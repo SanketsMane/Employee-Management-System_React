@@ -58,7 +58,6 @@ const LeaderboardPage = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching leaderboard data:', error);
       // Show empty state on error
       setLeaderboard({
         overall: [],

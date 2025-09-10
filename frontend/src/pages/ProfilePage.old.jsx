@@ -21,6 +21,7 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { user, updateUser } = useAuth();
@@ -84,16 +85,6 @@ const ProfilePage = () => {
       console.error('Error fetching dashboard data:', error);
     }
   };
-          lastName: response.data.data.user.lastName,
-          phone: response.data.data.user.phone || '',
-          address: response.data.data.user.address || '',
-          skills: response.data.data.user.skills ? response.data.data.user.skills.join(', ') : ''
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -138,11 +129,11 @@ const ProfilePage = () => {
         setProfile(response.data.data.user);
         updateUser(response.data.data.user);
         setIsEditing(false);
-        alert('Profile updated successfully!');
+        toast.success('Profile updated successfully!');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Error updating profile. Please try again.');
+      toast.error('Error updating profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -175,11 +166,11 @@ const ProfilePage = () => {
 
       if (response.data.success) {
         await fetchProfile();
-        alert('Document uploaded successfully!');
+        toast.success('Document uploaded successfully!');
       }
     } catch (error) {
       console.error('Error uploading document:', error);
-      alert('Error uploading document. Please try again.');
+      toast.error('Error uploading document. Please try again.');
     } finally {
       setUploadingDocument(false);
       e.target.value = ''; // Reset file input

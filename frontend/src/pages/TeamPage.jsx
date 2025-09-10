@@ -26,18 +26,19 @@ const TeamPage = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      console.log('Fetching employees...');
-      const response = await api.get('/users/employees');
+      console.log('Fetching team members...');
+      // Use the new team-members endpoint that works for all authenticated users
+      const response = await api.get('/users/team-members');
       if (response.data.success) {
-        console.log('Employees fetched:', response.data.data.employees.length);
+        console.log('Team members fetched:', response.data.data.employees.length);
         setEmployees(response.data.data.employees);
       } else {
-        console.error('Failed to fetch employees:', response.data.message);
-        toast.error('Failed to fetch employees');
+        console.error('Failed to fetch team members:', response.data.message);
+        toast.error('Failed to fetch team members');
       }
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      toast.error('Error fetching employees');
+      console.error('Error fetching team members:', error);
+      toast.error('Error fetching team members');
     } finally {
       setLoading(false);
     }
@@ -120,20 +121,21 @@ const TeamPage = () => {
   const departments = [...new Set(employees.map(emp => emp.department))];
   const roles = [...new Set(employees.map(emp => emp.role))];
 
-  if (!isHR && !isAdmin && !isManager) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Access denied. Only HR, Admins, and Managers can view team data.</p>
-      </div>
-    );
-  }
+  // Note: All authenticated users can now view team members
+  // Employees see limited info and only their department colleagues
+  // HR/Admin/Manager see full details and can edit/delete
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Team Management</h1>
-          <p className="text-muted-foreground">Manage and view team members</p>
+          <h1 className="text-3xl font-bold">Team Directory</h1>
+          <p className="text-muted-foreground">
+            {user?.role === 'Employee' 
+              ? 'View your department colleagues' 
+              : 'Manage and view team members'
+            }
+          </p>
         </div>
         {(isHR || isAdmin) && (
           <Button>
@@ -264,7 +266,9 @@ const TeamPage = () => {
                           )}
                         </div>
                       </div>
-                      <div className={`w-3 h-3 rounded-full ${employee.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      {(isHR || isAdmin || isManager) && (
+                        <div className={`w-3 h-3 rounded-full ${employee.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -289,13 +293,19 @@ const TeamPage = () => {
             </div>
             <div className="space-y-2">
               <p><strong>Name:</strong> {selectedEmployee.fullName}</p>
-              <p><strong>Email:</strong> {selectedEmployee.email}</p>
+              {(isHR || isAdmin || isManager) && (
+                <p><strong>Email:</strong> {selectedEmployee.email}</p>
+              )}
               <p><strong>Employee ID:</strong> {selectedEmployee.employeeId}</p>
               <p><strong>Department:</strong> {selectedEmployee.department}</p>
               <p><strong>Position:</strong> {selectedEmployee.position}</p>
-              <p><strong>Phone:</strong> {selectedEmployee.phoneNumber}</p>
+              {(isHR || isAdmin || isManager) && selectedEmployee.phoneNumber && (
+                <p><strong>Phone:</strong> {selectedEmployee.phoneNumber}</p>
+              )}
               <p><strong>Role:</strong> {selectedEmployee.role}</p>
-              <p><strong>Status:</strong> {selectedEmployee.isActive ? 'Active' : 'Inactive'}</p>
+              {(isHR || isAdmin || isManager) && (
+                <p><strong>Status:</strong> {selectedEmployee.isActive ? 'Active' : 'Inactive'}</p>
+              )}
             </div>
           </div>
         </div>

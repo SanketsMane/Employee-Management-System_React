@@ -56,7 +56,6 @@ const AdminLeavesPage = () => {
         calculateStats(response.data.data.leaves || []);
       }
     } catch (error) {
-      console.error('Error fetching leaves:', error);
     } finally {
       setLoading(false);
     }
@@ -69,7 +68,6 @@ const AdminLeavesPage = () => {
         setDepartments(response.data.data);
       }
     } catch (error) {
-      console.error('Error fetching departments:', error);
     }
   };
 

@@ -1,13 +1,15 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
+import { Toaster } from 'react-hot-toast';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WebSocketProvider } from './context/WebSocketContext';
 import Login from './pages/Login';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
-import AttendancePage from './pages/AttendancePage';
+import LandingPage from './pages/LandingPageNew';
+import AttendancePageNew from './pages/AttendancePageNew';
 import WorkSheetPage from './pages/WorkSheetPage';
 import LeavesPage from './pages/LeavesPage';
 import ProfilePage from './pages/ProfilePage';
@@ -19,12 +21,15 @@ import SettingsPage from './pages/SettingsPage';
 import DailyTaskSheet from './pages/DailyTaskSheet';
 import TeamManagement from './pages/TeamManagement';
 import PendingApprovals from './pages/admin/PendingApprovals';
-import AdminUserManagement from './pages/UsersPage';
+import AdminUserManagement from './components/AdminUserManagement';
 import AdminAttendancePage from './pages/AdminAttendancePage';
-import AdminWorksheetsPage from './pages/AdminWorksheetsPage';
+import AdminWorksheetPage from './pages/AdminWorksheetPage';
 import AdminLeavesPage from './pages/AdminLeavesPage';
+import AdminLeaveManagement from './pages/AdminLeaveManagement';
+import EmployeeLeaveManagement from './pages/EmployeeLeaveManagement';
 import BugReportsPage from './pages/BugReportsPage';
 import AdminBugReportsPage from './pages/AdminBugReportsPage';
+import CompanySettingsPage from './pages/CompanySettingsPage';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 
@@ -50,8 +55,8 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Public Route Component (redirect to dashboard if authenticated)
-const PublicRoute = ({ children }) => {
+// Public Route Component (allow access to landing page even if authenticated)
+const PublicRoute = ({ children, redirectIfAuthenticated = true }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -65,8 +70,8 @@ const PublicRoute = ({ children }) => {
     );
   }
 
-  // If user is logged in, redirect to dashboard
-  if (user) {
+  // If user is logged in and we should redirect, go to dashboard
+  if (user && redirectIfAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -108,18 +113,26 @@ function AppContent() {
     <Router>
       <Routes>
         <Route 
-          path="/login" 
+          path="/" 
           element={
-            <PublicRoute>
-              <Login />
+            <PublicRoute redirectIfAuthenticated={false}>
+              <LandingPage />
             </PublicRoute>
           } 
         />
         <Route 
+          path="/login" 
+          element={
+            <PublicRoute redirectIfAuthenticated={false}>
+              <LandingPage openLogin={true} />
+            </PublicRoute>
+          }
+        />
+        <Route 
           path="/register" 
           element={
-            <PublicRoute>
-              <RegisterPage />
+            <PublicRoute redirectIfAuthenticated={false}>
+              <LandingPage openLogin={true} />
             </PublicRoute>
           } 
         />
@@ -140,7 +153,7 @@ function AppContent() {
               <Layout>
                 <RoleBasedPageWrapper 
                   AdminComponent={AdminAttendancePage}
-                  RegularComponent={AttendancePage}
+                  RegularComponent={AttendancePageNew}
                   requiresAdminAccess={true}
                 />
               </Layout>
@@ -153,7 +166,7 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <RoleBasedPageWrapper 
-                  AdminComponent={AdminWorksheetsPage}
+                  AdminComponent={AdminWorksheetPage}
                   RegularComponent={WorkSheetPage}
                   requiresAdminAccess={true}
                 />
@@ -167,8 +180,8 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <RoleBasedPageWrapper 
-                  AdminComponent={AdminLeavesPage}
-                  RegularComponent={LeavesPage}
+                  AdminComponent={AdminLeaveManagement}
+                  RegularComponent={EmployeeLeaveManagement}
                   requiresAdminAccess={true}
                 />
               </Layout>
@@ -299,8 +312,17 @@ function AppContent() {
             </ProtectedRoute>
           } 
         />
-        <Route path="/" element={<Navigate to="/dashboard" />} />
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route 
+          path="/company-settings" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CompanySettingsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
@@ -311,6 +333,16 @@ function App() {
     <AuthProvider>
       <WebSocketProvider>
         <AppContent />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
         <ToastContainer
           position="top-right"
           autoClose={5000}

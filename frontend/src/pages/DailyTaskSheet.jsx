@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Clock, CheckCircle, AlertCircle, Save, Send, Edit2, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const DailyTaskSheet = () => {
   const [taskSheet, setTaskSheet] = useState(null);
@@ -74,7 +75,7 @@ const DailyTaskSheet = () => {
       // Validate tasks
       const validTasks = tasks.filter(task => task.taskTitle.trim() !== '');
       if (validTasks.length === 0) {
-        alert('Please add at least one task');
+        toast.error('Please add at least one task');
         return;
       }
 
@@ -99,14 +100,14 @@ const DailyTaskSheet = () => {
         if (submit) {
           await submitTaskSheet(data.data._id);
         } else {
-          alert('Task sheet saved successfully');
+          toast.success('Task sheet saved successfully');
         }
       } else {
-        alert(data.message || 'Error saving task sheet');
+        toast.error(data.message || 'Error saving task sheet');
       }
     } catch (error) {
       console.error('Error saving task sheet:', error);
-      alert('Error saving task sheet');
+      toast.error('Error saving task sheet');
     } finally {
       setSaving(false);
     }
@@ -128,13 +129,13 @@ const DailyTaskSheet = () => {
       
       if (data.success) {
         setTaskSheet(data.data);
-        alert('Task sheet submitted successfully');
+        toast.success('Task sheet submitted successfully');
       } else {
-        alert(data.message || 'Error submitting task sheet');
+        toast.error(data.message || 'Error submitting task sheet');
       }
     } catch (error) {
       console.error('Error submitting task sheet:', error);
-      alert('Error submitting task sheet');
+      toast.error('Error submitting task sheet');
     }
   };
 

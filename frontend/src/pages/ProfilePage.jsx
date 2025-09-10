@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, 
   Mail, 
@@ -13,13 +13,17 @@ import {
   TrendingUp,
   Clock,
   Target,
-  X
+  X,
+  Camera,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { user, updateUser } = useAuth();
@@ -27,6 +31,9 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [errors, setErrors] = useState({});
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -55,19 +62,29 @@ const ProfilePage = () => {
       const response = await api.get('/auth/me');
       
       if (response.data.success) {
-        const userData = response.data.data;
+        const userData = response.data.data.user; // Fix: Extract user from nested data
         setProfile(userData);
         setFormData({
           firstName: userData.firstName || '',
           lastName: userData.lastName || '',
           phone: userData.phone || '',
-          address: userData.address || '',
+          address: typeof userData.address === 'string' ? userData.address : (userData.address ? `${userData.address.street || ''} ${userData.address.city || ''} ${userData.address.state || ''} ${userData.address.zipCode || ''} ${userData.address.country || ''}`.trim() : ''),
           skills: Array.isArray(userData.skills) ? userData.skills.join(', ') : userData.skills || '',
           bio: userData.bio || ''
         });
+        
+        // Only update auth context if essential data changed
+        if (!user || 
+            userData.firstName !== user.firstName || 
+            userData.lastName !== user.lastName ||
+            userData.email !== user.email ||
+            userData.profilePicture !== user.profilePicture) {
+          updateUser(userData);
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching profile:', error.response?.data || error.message);
+      toast.error('Failed to load profile data');
     } finally {
       setLoading(false);
     }
@@ -109,38 +126,150 @@ const ProfilePage = () => {
   // Update profile
   const handleUpdateProfile = async () => {
     try {
+      // Validate form data
+      const newErrors = {};
+      if (!formData.firstName.trim()) {
+        newErrors.firstName = 'First name is required';
+      }
+      if (!formData.lastName.trim()) {
+        newErrors.lastName = 'Last name is required';
+      }
+      if (formData.phone && !/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
+        newErrors.phone = 'Please enter a valid phone number';
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        toast.error('Please fix the validation errors');
+        return;
+      }
+
       setSaving(true);
+      setErrors({});
+      
       const skillsArray = formData.skills.split(',').map(skill => skill.trim()).filter(skill => skill);
       
       const updateData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        address: formData.address,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
         skills: skillsArray,
-        bio: formData.bio
+        bio: formData.bio.trim()
       };
+      
+      console.log('🔄 Updating profile with data:', updateData);
       
       const response = await api.put('/auth/profile', updateData);
 
       if (response.data.success) {
-        setProfile(response.data.data);
-        updateUser(response.data.data);
+        const updatedUser = response.data.data;
+        setProfile(updatedUser);
+        
+        // Only update auth context if essential user data changed
+        if (updatedUser.firstName !== user?.firstName || 
+            updatedUser.lastName !== user?.lastName ||
+            updatedUser.email !== user?.email ||
+            updatedUser.profilePicture !== user?.profilePicture) {
+          updateUser(updatedUser);
+        }
+        
         setIsEditing(false);
-        // Could add toast success message here if toast is imported
+        toast.success('Profile updated successfully!');
+        
+        // Refresh profile data
+        await fetchProfile();
       }
     } catch (error) {
       console.error('❌ Error updating profile:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 'Failed to update profile';
+      toast.error(errorMessage);
+      
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      }
     } finally {
       setSaving(false);
     }
   };
 
+  // Upload profile picture
+  const handleProfilePictureUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+      
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+
+      console.log('📸 Uploading profile picture...');
+
+      const response = await api.post('/auth/profile/picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.data.success) {
+        const newProfilePicture = response.data.data.profilePicture;
+        
+        // Update local state
+        const updatedProfile = { ...profile, profilePicture: newProfilePicture };
+        setProfile(updatedProfile);
+        
+        // Update auth context with new profile picture
+        updateUser({ ...user, profilePicture: newProfilePicture });
+        
+        toast.success('Profile picture updated successfully!');
+        
+        // Refresh profile data
+        await fetchProfile();
+      }
+    } catch (error) {
+      console.error('❌ Error uploading profile picture:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 'Failed to upload profile picture';
+      toast.error(errorMessage);
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   if (loading) {
@@ -158,20 +287,73 @@ const ProfilePage = () => {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
-                <User className="w-10 h-10 text-primary" />
+              {/* Profile Picture */}
+              <div className="relative">
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center overflow-hidden">
+                  {profile?.profilePicture ? (
+                    <img 
+                      src={profile.profilePicture} 
+                      alt={`${profile.firstName} ${profile.lastName}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <User className={`w-10 h-10 text-primary ${profile?.profilePicture ? 'hidden' : ''}`} />
+                </div>
+                
+                {/* Upload Profile Picture Button */}
+                <button
+                  onClick={triggerFileInput}
+                  disabled={uploadingPhoto}
+                  className="absolute -bottom-1 -right-1 bg-primary text-white p-1.5 rounded-full shadow-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Upload profile picture"
+                >
+                  {uploadingPhoto ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
+                </button>
+                
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureUpload}
+                  className="hidden"
+                />
               </div>
+              
               <div>
                 <CardTitle className="text-2xl">
                   {profile?.firstName} {profile?.lastName}
                 </CardTitle>
                 <p className="text-muted-foreground">{profile?.role}</p>
                 <p className="text-sm text-muted-foreground">{profile?.department}</p>
+                <p className="text-xs text-muted-foreground">ID: {profile?.employeeId}</p>
               </div>
             </div>
             <Button
               variant={isEditing ? "outline" : "default"}
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={() => {
+                if (isEditing) {
+                  // Reset form data when canceling
+                  setFormData({
+                    firstName: profile?.firstName || '',
+                    lastName: profile?.lastName || '',
+                    phone: profile?.phone || '',
+                    address: profile?.address || '',
+                    skills: Array.isArray(profile?.skills) ? profile.skills.join(', ') : profile?.skills || '',
+                    bio: profile?.bio || ''
+                  });
+                  setErrors({});
+                }
+                setIsEditing(!isEditing);
+              }}
             >
               {isEditing ? (
                 <>
@@ -202,13 +384,21 @@ const ProfilePage = () => {
                 <div className="flex items-center space-x-3">
                   <Phone className="w-4 h-4 text-muted-foreground" />
                   {isEditing ? (
-                    <Input
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="Phone number"
-                      className="flex-1"
-                    />
+                    <div className="flex-1">
+                      <Input
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="Phone number"
+                        className={`flex-1 ${errors.phone ? 'border-red-500' : ''}`}
+                      />
+                      {errors.phone && (
+                        <p className="text-red-500 text-sm mt-1 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {errors.phone}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <span>{profile?.phone || 'Not provided'}</span>
                   )}
@@ -217,21 +407,37 @@ const ProfilePage = () => {
                 <div className="flex items-center space-x-3">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
                   {isEditing ? (
-                    <Input
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      placeholder="Address"
-                      className="flex-1"
-                    />
+                    <div className="flex-1">
+                      <Input
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        placeholder="Address"
+                        className="flex-1"
+                      />
+                    </div>
                   ) : (
-                    <span>{profile?.address || 'Not provided'}</span>
+                    <span>
+                      {typeof profile?.address === 'string' 
+                        ? (profile.address || 'Not provided')
+                        : profile?.address 
+                          ? `${profile.address.street || ''} ${profile.address.city || ''} ${profile.address.state || ''} ${profile.address.zipCode || ''} ${profile.address.country || ''}`.trim() || 'Not provided'
+                          : 'Not provided'
+                      }
+                    </span>
                   )}
                 </div>
 
                 <div className="flex items-center space-x-3">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>Joined {new Date(profile?.createdAt).toLocaleDateString()}</span>
+                  <span>
+                    Joined {profile?.createdAt 
+                      ? new Date(profile.createdAt).toLocaleDateString() 
+                      : profile?.dateOfJoining 
+                        ? new Date(profile.dateOfJoining).toLocaleDateString()
+                        : 'Unknown'
+                    }
+                  </span>
                 </div>
               </div>
             </div>
@@ -241,30 +447,46 @@ const ProfilePage = () => {
               <h3 className="font-semibold mb-4">Personal Information</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">First Name</label>
+                  <label className="text-sm font-medium">First Name *</label>
                   {isEditing ? (
-                    <Input
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      placeholder="First name"
-                      className="mt-1"
-                    />
+                    <div>
+                      <Input
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        placeholder="First name"
+                        className={`mt-1 ${errors.firstName ? 'border-red-500' : ''}`}
+                      />
+                      {errors.firstName && (
+                        <p className="text-red-500 text-sm mt-1 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {errors.firstName}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <p className="mt-1">{profile?.firstName}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Last Name</label>
+                  <label className="text-sm font-medium">Last Name *</label>
                   {isEditing ? (
-                    <Input
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      placeholder="Last name"
-                      className="mt-1"
-                    />
+                    <div>
+                      <Input
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        placeholder="Last name"
+                        className={`mt-1 ${errors.lastName ? 'border-red-500' : ''}`}
+                      />
+                      {errors.lastName && (
+                        <p className="text-red-500 text-sm mt-1 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {errors.lastName}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <p className="mt-1">{profile?.lastName}</p>
                   )}
@@ -307,20 +529,44 @@ const ProfilePage = () => {
           </div>
 
           {isEditing && (
-            <div className="mt-6 flex justify-end">
-              <Button onClick={handleUpdateProfile} disabled={saving}>
-                {saving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
+            <div className="mt-6 flex justify-between items-center">
+              <p className="text-sm text-gray-600">
+                <span className="text-red-500">*</span> Required fields
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setFormData({
+                      firstName: profile?.firstName || '',
+                      lastName: profile?.lastName || '',
+                      phone: profile?.phone || '',
+                      address: profile?.address || '',
+                      skills: Array.isArray(profile?.skills) ? profile.skills.join(', ') : profile?.skills || '',
+                      bio: profile?.bio || ''
+                    });
+                    setErrors({});
+                    setIsEditing(false);
+                  }}
+                  disabled={saving}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateProfile} disabled={saving}>
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

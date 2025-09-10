@@ -134,7 +134,6 @@ const CompanyPage = () => {
       });
 
     } catch (error) {
-      console.error('Error fetching company data:', error);
       setCompanyData(prev => ({ ...prev, loading: false }));
     }
   };
@@ -142,17 +141,27 @@ const CompanyPage = () => {
   const handleUpdateCompany = async () => {
     try {
       setSaving(true);
+      console.log('🔄 Updating company info with data:', formData);
+      
       const response = await api.put('/company/info', formData);
+      console.log('✅ Company update response:', response.data);
 
       if (response.data.success) {
         setCompanyData(prev => ({
           ...prev,
           info: { ...prev.info, ...formData }
         }));
+        
+        // Show success message
+        alert('Company information updated successfully!');
         setIsEditing(false);
+        fetchCompanyData(); // Refresh data after update
+      } else {
+        alert('Failed to update company information: ' + (response.data.message || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error updating company info:', error);
+      console.error('❌ Company update error:', error);
+      alert('Error updating company information: ' + (error.response?.data?.message || error.message));
     } finally {
       setSaving(false);
     }

@@ -109,7 +109,6 @@ const CompanyPage = () => {
       });
 
     } catch (error) {
-      console.error('Error fetching company data:', error);
       setCompanyData(prev => ({ ...prev, loading: false }));
     }
   };

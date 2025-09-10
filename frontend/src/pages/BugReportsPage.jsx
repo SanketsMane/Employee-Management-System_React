@@ -73,7 +73,6 @@ const BugReportsPage = () => {
       setBugReports(response.data.data.bugReports);
       setPagination(response.data.data.pagination);
     } catch (error) {
-      console.error('Error fetching bug reports:', error);
       toast.error('Failed to fetch bug reports');
     } finally {
       setLoading(false);
@@ -86,7 +85,6 @@ const BugReportsPage = () => {
       setSelectedBugReport(response.data.data);
       setShowDetailDialog(true);
     } catch (error) {
-      console.error('Error fetching bug report details:', error);
       toast.error('Failed to fetch bug report details');
     }
   };

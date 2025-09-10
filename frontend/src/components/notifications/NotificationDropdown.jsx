@@ -34,7 +34,6 @@ const NotificationDropdown = () => {
         setNotifications(response.data.data.notifications);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -47,7 +46,6 @@ const NotificationDropdown = () => {
         setUnreadCount(response.data.data.count);
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, UserPlus, Send, MessageCircle, Settings, Crown, Mail } from 'lucide-react';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 
 const TeamManagement = () => {
   const [teams, setTeams] = useState([]);
@@ -82,7 +83,7 @@ const TeamManagement = () => {
     const handleSubmit = async (e) => {
       e.preventDefault();
       if (!formData.name || !formData.department || !formData.teamLeadId) {
-        alert('Please fill all required fields');
+        toast.error('Please fill all required fields');
         return;
       }
 
@@ -91,16 +92,16 @@ const TeamManagement = () => {
         const response = await api.post('/teams', formData);
         
         if (response.data.success) {
-          alert('Team created successfully');
+          toast.success('Team created successfully');
           setShowCreateTeam(false);
           fetchTeams();
           setFormData({ name: '', description: '', department: '', teamLeadId: '' });
         } else {
-          alert(response.data.message || 'Error creating team');
+          toast.error(response.data.message || 'Error creating team');
         }
       } catch (error) {
         console.error('❌ Error creating team:', error.response?.data || error.message);
-        alert(error.response?.data?.message || 'Error creating team');
+        toast.error(error.response?.data?.message || 'Error creating team');
       } finally {
         setCreating(false);
       }
@@ -197,7 +198,7 @@ const TeamManagement = () => {
 
     const handleAddMember = async () => {
       if (!selectedEmployeeId) {
-        alert('Please select an employee');
+        toast.error('Please select an employee');
         return;
       }
 
@@ -216,16 +217,16 @@ const TeamManagement = () => {
         const data = await response.json();
         
         if (data.success) {
-          alert('Member added successfully');
+          toast.success('Member added successfully');
           onClose();
           fetchTeams();
           fetchAvailableEmployees();
         } else {
-          alert(data.message || 'Error adding member');
+          toast.error(data.message || 'Error adding member');
         }
       } catch (error) {
         console.error('Error adding member:', error);
-        alert('Error adding member');
+        toast.error('Error adding member');
       } finally {
         setAdding(false);
       }
@@ -284,7 +285,7 @@ const TeamManagement = () => {
 
     const handleSendNotification = async () => {
       if (!notification.title || !notification.message) {
-        alert('Please fill title and message');
+        toast.error('Please fill title and message');
         return;
       }
 
@@ -303,15 +304,15 @@ const TeamManagement = () => {
         const data = await response.json();
         
         if (data.success) {
-          alert('Notification sent successfully');
+          toast.success('Notification sent successfully');
           onClose();
           setNotification({ title: '', message: '', priority: 'Medium' });
         } else {
-          alert(data.message || 'Error sending notification');
+          toast.error(data.message || 'Error sending notification');
         }
       } catch (error) {
         console.error('Error sending notification:', error);
-        alert('Error sending notification');
+        toast.error('Error sending notification');
       } finally {
         setSending(false);
       }

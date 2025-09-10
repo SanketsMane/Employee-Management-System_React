@@ -390,9 +390,18 @@ exports.getLeaveRequest = async (req, res) => {
 exports.updateLeaveStatus = async (req, res) => {
   try {
     const leaveId = req.params.id;
-    const { status, rejectionReason } = req.body;
+    const { status, rejectionReason, adminMessage } = req.body;
     const userId = req.user._id;
     const userRole = req.user.role;
+
+    console.log('🔄 UPDATING LEAVE STATUS:', {
+      leaveId,
+      status,
+      rejectionReason,
+      adminMessage,
+      userId,
+      userRole
+    });
 
     if (!['HR', 'Manager', 'Team Lead', 'Admin'].includes(userRole)) {
       return res.status(403).json({
@@ -416,7 +425,8 @@ exports.updateLeaveStatus = async (req, res) => {
     }
 
     const leave = await Leave.findById(leaveId)
-      .populate('employee', 'firstName lastName email phone manager teamLead');
+      .populate('employee', 'firstName lastName email phone manager teamLead department')
+      .populate('approvedBy', 'firstName lastName email');
 
     if (!leave) {
       return res.status(404).json({
@@ -447,6 +457,9 @@ exports.updateLeaveStatus = async (req, res) => {
       }
     }
 
+    // Get approver details
+    const approver = await User.findById(userId).select('firstName lastName email role');
+
     // Update leave request
     leave.status = status;
     leave.approvedBy = userId;
@@ -456,67 +469,325 @@ exports.updateLeaveStatus = async (req, res) => {
       leave.rejectionReason = rejectionReason.trim();
     }
 
+    // Add admin message if provided
+    if (adminMessage) {
+      leave.adminMessage = adminMessage.trim();
+    }
+
     await leave.save();
 
-    // Send email notification to employee
-    await sendLeaveNotification(leave, 'status_update');
+    // Enhanced email notification with more details
+    try {
+      const emailData = {
+        leave,
+        employee: leave.employee,
+        approver,
+        status,
+        rejectionReason,
+        adminMessage,
+        leaveDetails: {
+          leaveType: leave.leaveType,
+          startDate: leave.startDate.toDateString(),
+          endDate: leave.endDate.toDateString(),
+          totalDays: leave.totalDays,
+          reason: leave.reason
+        }
+      };
 
-    // Send SMS notification to employee if phone number is available
+      await sendLeaveNotification(emailData, 'status_update');
+      console.log('✅ Email notification sent successfully');
+    } catch (emailError) {
+      console.error('❌ Email notification failed:', emailError);
+    }
+
+    // Enhanced SMS notification
     if (leave.employee.phone) {
       const leaveDates = `${leave.startDate.toDateString()} to ${leave.endDate.toDateString()}`;
       
-      if (status === 'Approved') {
-        await sendQuickSMS.leaveApproved(
-          leave.employee.phone,
-          leave.employee.firstName,
-          leave.leaveType,
-          leaveDates
-        );
-      } else if (status === 'Rejected') {
-        await sendQuickSMS.leaveRejected(
-          leave.employee.phone,
-          leave.employee.firstName,
-          leave.leaveType,
-          leaveDates
-        );
+      try {
+        if (status === 'Approved') {
+          await sendQuickSMS.leaveApproved(
+            leave.employee.phone,
+            leave.employee.firstName,
+            leave.leaveType,
+            leaveDates,
+            approver.firstName + ' ' + approver.lastName
+          );
+        } else if (status === 'Rejected') {
+          await sendQuickSMS.leaveRejected(
+            leave.employee.phone,
+            leave.employee.firstName,
+            leave.leaveType,
+            leaveDates,
+            rejectionReason
+          );
+        }
+        
+        console.log(`📱 SMS notification sent to ${leave.employee.firstName} (${leave.employee.phone})`);
+      } catch (smsError) {
+        console.error('❌ SMS notification failed:', smsError);
       }
-      
-      console.log(`📱 SMS notification sent to ${leave.employee.firstName} (${leave.employee.phone})`);
     }
 
     // Log the action
     await Log.create({
       user: userId,
-      action: `Leave Request ${status}`,
+      action: `Leave ${status.toLowerCase()}`,
       category: 'Leave',
-      details: `${userRole} ${status.toLowerCase()} leave request for ${leave.employee.firstName} ${leave.employee.lastName} (${leave.leaveType} - ${leave.totalDays} days)`,
+      details: `Leave ${status.toLowerCase()}: ${leave.leaveType} from ${leave.startDate.toDateString()} to ${leave.endDate.toDateString()}${rejectionReason ? ` - Reason: ${rejectionReason}` : ''}`,
       ipAddress: req.ip,
-      userAgent: req.get('User-Agent'),
+      method: 'PUT',
+      endpoint: '/api/leave/update-status',
       success: true,
-      metadata: { leaveId, previousStatus: 'Pending', newStatus: status }
+      metadata: {
+        leaveId: leave._id,
+        targetUser: leave.employee._id,
+        status,
+        rejectionReason,
+        adminMessage
+      }
     });
 
+    // Populate the updated leave with all necessary fields
     const updatedLeave = await Leave.findById(leaveId)
-      .populate('employee', 'firstName lastName employeeId department')
-      .populate('recipient', 'firstName lastName role')
-      .populate('approvedBy', 'firstName lastName');
+      .populate('employee', 'firstName lastName email department role')
+      .populate('approvedBy', 'firstName lastName email role');
 
     res.status(200).json({
       success: true,
       message: `Leave request ${status.toLowerCase()} successfully`,
-      data: { leave: updatedLeave }
+      data: updatedLeave
     });
+
   } catch (error) {
-    console.error('Update leave status error:', error);
+    console.error('❌ Update leave status error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error updating leave request status',
+      message: 'Error updating leave status',
       error: error.message
     });
   }
 };
 
-// @desc    Cancel leave request
+// @desc    Get all leave requests with advanced filtering
+// @route   GET /api/leaves/admin/all
+// @access  Private (Admin, HR, Manager)
+exports.getAllLeavesAdmin = async (req, res) => {
+  try {
+    const { 
+      startDate, 
+      endDate, 
+      status, 
+      employeeName,
+      employeeId,
+      department, 
+      leaveType,
+      page = 1, 
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    const userRole = req.user.role;
+    const userId = req.user._id;
+
+    // Check permissions
+    if (!['Admin', 'HR', 'Manager'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin, HR, or Manager role required.'
+      });
+    }
+
+    console.log('📊 GET ALL LEAVES ADMIN - User:', req.user.firstName, req.user.lastName, 'Role:', userRole);
+    console.log('📊 Query params:', req.query);
+
+    // Build aggregation pipeline
+    let pipeline = [
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employeeData'
+        }
+      },
+      { $unwind: '$employeeData' },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'approvedBy',
+          foreignField: '_id',
+          as: 'approverData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'recipient',
+          foreignField: '_id',
+          as: 'recipientData'
+        }
+      }
+    ];
+
+    // Build match conditions
+    let matchConditions = {
+      'employeeData.isActive': true
+    };
+
+    // Role-based filtering
+    if (userRole === 'Manager') {
+      // Managers can only see their team members' leaves
+      const teamMembers = await User.find({ manager: userId }).select('_id');
+      const teamMemberIds = teamMembers.map(member => member._id);
+      teamMemberIds.push(userId); // Include manager's own leaves
+      
+      matchConditions['employeeData._id'] = { $in: teamMemberIds };
+    }
+
+    // Apply filters
+    if (startDate && endDate) {
+      matchConditions.startDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    } else if (startDate) {
+      matchConditions.startDate = { $gte: new Date(startDate) };
+    } else if (endDate) {
+      matchConditions.startDate = { $lte: new Date(endDate) };
+    }
+
+    if (status && status !== 'all') {
+      matchConditions.status = status;
+    }
+
+    if (employeeId) {
+      matchConditions['employeeData._id'] = new mongoose.Types.ObjectId(employeeId);
+    }
+
+    if (department && department !== 'all') {
+      matchConditions['employeeData.department'] = department;
+    }
+
+    if (leaveType && leaveType !== 'all') {
+      matchConditions.leaveType = leaveType;
+    }
+
+    if (employeeName) {
+      matchConditions.$or = [
+        { 'employeeData.firstName': { $regex: employeeName, $options: 'i' } },
+        { 'employeeData.lastName': { $regex: employeeName, $options: 'i' } },
+        { 
+          $expr: {
+            $regexMatch: {
+              input: { $concat: ['$employeeData.firstName', ' ', '$employeeData.lastName'] },
+              regex: employeeName,
+              options: 'i'
+            }
+          }
+        }
+      ];
+    }
+
+    pipeline.push({ $match: matchConditions });
+
+    // Add sorting
+    const sortDirection = sortOrder === 'desc' ? -1 : 1;
+    const sortField = sortBy === 'employeeName' ? 'employeeData.firstName' : sortBy;
+    pipeline.push({ $sort: { [sortField]: sortDirection } });
+
+    // Get total count for pagination
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const countResult = await Leave.aggregate(countPipeline);
+    const total = countResult.length > 0 ? countResult[0].total : 0;
+
+    // Add pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: parseInt(limit) });
+
+    // Add projection to format output
+    pipeline.push({
+      $project: {
+        _id: 1,
+        leaveType: 1,
+        startDate: 1,
+        endDate: 1,
+        totalDays: 1,
+        reason: 1,
+        status: 1,
+        approvedDate: 1,
+        rejectionReason: 1,
+        adminMessage: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        employee: {
+          _id: '$employeeData._id',
+          firstName: '$employeeData.firstName',
+          lastName: '$employeeData.lastName',
+          email: '$employeeData.email',
+          department: '$employeeData.department',
+          role: '$employeeData.role',
+          employeeId: '$employeeData.employeeId'
+        },
+        approver: {
+          $cond: {
+            if: { $gt: [{ $size: '$approverData' }, 0] },
+            then: {
+              _id: { $arrayElemAt: ['$approverData._id', 0] },
+              firstName: { $arrayElemAt: ['$approverData.firstName', 0] },
+              lastName: { $arrayElemAt: ['$approverData.lastName', 0] },
+              role: { $arrayElemAt: ['$approverData.role', 0] }
+            },
+            else: null
+          }
+        },
+        recipient: {
+          $cond: {
+            if: { $gt: [{ $size: '$recipientData' }, 0] },
+            then: {
+              _id: { $arrayElemAt: ['$recipientData._id', 0] },
+              firstName: { $arrayElemAt: ['$recipientData.firstName', 0] },
+              lastName: { $arrayElemAt: ['$recipientData.lastName', 0] },
+              role: { $arrayElemAt: ['$recipientData.role', 0] }
+            },
+            else: null
+          }
+        }
+      }
+    });
+
+    const leaves = await Leave.aggregate(pipeline);
+
+    // Calculate pagination info
+    const pages = Math.ceil(total / parseInt(limit));
+
+    console.log(`✅ Found ${leaves.length} leaves (${total} total)`);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        leaves,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages
+        }
+      },
+      total
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching admin leaves:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching leave requests',
+      error: error.message
+    });
+  }
+};
 // @route   PUT /api/leaves/:id/cancel
 // @access  Private (Employee who submitted the request)
 exports.cancelLeaveRequest = async (req, res) => {
@@ -765,6 +1036,453 @@ exports.getLeaveBalance = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching leave balance',
+      error: error.message
+    });
+  }
+};
+
+// Get all leaves for admin with advanced filtering
+exports.getAllLeavesAdmin = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      startDate,
+      endDate,
+      employeeName,
+      employeeId,
+      department,
+      leaveType,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build filter object
+    let filter = {};
+
+    // Status filter
+    if (status && status !== 'all') {
+      filter.status = status;
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      filter.startDate = {};
+      if (startDate) filter.startDate.$gte = new Date(startDate);
+      if (endDate) filter.startDate.$lte = new Date(endDate);
+    }
+
+    // Leave type filter
+    if (leaveType && leaveType !== 'all') {
+      filter.leaveType = leaveType;
+    }
+
+    // Employee filter
+    if (employeeId) {
+      filter.employee = employeeId;
+    }
+
+    console.log('🔍 Admin filter:', filter);
+
+    // Build aggregation pipeline
+    const pipeline = [
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employee'
+        }
+      },
+      { $unwind: '$employee' },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'approvedBy',
+          foreignField: '_id',
+          as: 'approver'
+        }
+      },
+      {
+        $unwind: {
+          path: '$approver',
+          preserveNullAndEmptyArrays: true
+        }
+      }
+    ];
+
+    // Apply filters after lookup
+    const matchFilters = { ...filter };
+
+    // Employee name filter (after lookup)
+    if (employeeName) {
+      matchFilters.$or = [
+        { 'employee.firstName': { $regex: employeeName, $options: 'i' } },
+        { 'employee.lastName': { $regex: employeeName, $options: 'i' } }
+      ];
+    }
+
+    // Department filter (after lookup)
+    if (department && department !== 'all') {
+      matchFilters['employee.department'] = department;
+    }
+
+    if (Object.keys(matchFilters).length > 0) {
+      pipeline.push({ $match: matchFilters });
+    }
+
+    // Sorting
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    pipeline.push({ $sort: sortOptions });
+
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: parseInt(limit) });
+
+    // Execute aggregation
+    const leaves = await Leave.aggregate(pipeline);
+
+    // Get total count for pagination
+    const countPipeline = [...pipeline];
+    countPipeline.pop(); // Remove limit
+    countPipeline.pop(); // Remove skip
+    countPipeline.push({ $count: 'total' });
+    
+    const countResult = await Leave.aggregate(countPipeline);
+    const total = countResult.length > 0 ? countResult[0].total : 0;
+
+    console.log('✅ Found leaves:', leaves.length, 'Total:', total);
+
+    res.json({
+      success: true,
+      data: {
+        leaves,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      },
+      total
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching admin leaves:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch leave requests',
+      error: error.message
+    });
+  }
+};
+
+// Get employee's own leaves with filtering
+exports.getMyLeaves = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      startDate,
+      endDate,
+      leaveType,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build filter object
+    let filter = { employee: req.user._id };
+
+    // Status filter
+    if (status && status !== 'all') {
+      filter.status = status;
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      filter.startDate = {};
+      if (startDate) filter.startDate.$gte = new Date(startDate);
+      if (endDate) filter.startDate.$lte = new Date(endDate);
+    }
+
+    // Leave type filter
+    if (leaveType && leaveType !== 'all') {
+      filter.leaveType = leaveType;
+    }
+
+    console.log('🔍 Employee filter:', filter);
+
+    // Build aggregation pipeline
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employee'
+        }
+      },
+      { $unwind: '$employee' },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'approvedBy',
+          foreignField: '_id',
+          as: 'approver'
+        }
+      },
+      {
+        $unwind: {
+          path: '$approver',
+          preserveNullAndEmptyArrays: true
+        }
+      }
+    ];
+
+    // Sorting
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    pipeline.push({ $sort: sortOptions });
+
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: parseInt(limit) });
+
+    // Execute aggregation
+    const leaves = await Leave.aggregate(pipeline);
+
+    // Get total count for pagination
+    const total = await Leave.countDocuments(filter);
+
+    console.log('✅ Found employee leaves:', leaves.length, 'Total:', total);
+
+    res.json({
+      success: true,
+      data: {
+        leaves,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      },
+      total
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching employee leaves:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch your leave requests',
+      error: error.message
+    });
+  }
+};
+
+// Apply for leave (enhanced)
+exports.applyForLeave = async (req, res) => {
+  try {
+    const {
+      leaveType,
+      startDate,
+      endDate,
+      reason,
+      halfDay = false,
+      halfDayPeriod = 'morning',
+      totalDays
+    } = req.body;
+
+    // Validate required fields
+    if (!leaveType || !startDate || !endDate || !reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'All required fields must be provided'
+      });
+    }
+
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (start < today) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start date cannot be in the past'
+      });
+    }
+
+    if (start > end) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date must be after start date'
+      });
+    }
+
+    // Calculate total days if not provided
+    let calculatedDays = totalDays;
+    if (!calculatedDays) {
+      const timeDiff = end.getTime() - start.getTime();
+      calculatedDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+      if (halfDay) {
+        calculatedDays = 0.5;
+      }
+    }
+
+    // Find appropriate recipient (HR or Admin)
+    let recipient = await User.findOne({ role: 'HR', isActive: true });
+    if (!recipient) {
+      recipient = await User.findOne({ role: 'Admin', isActive: true });
+    }
+
+    if (!recipient) {
+      return res.status(500).json({
+        success: false,
+        message: 'No available HR or Admin to process leave request'
+      });
+    }
+
+    // Create leave request
+    const leave = new Leave({
+      employee: req.user._id,
+      leaveType,
+      startDate: start,
+      endDate: end,
+      reason: reason.trim(),
+      totalDays: calculatedDays,
+      isHalfDay: halfDay,
+      halfDaySession: halfDay ? (halfDayPeriod === 'morning' ? 'Morning' : 'Afternoon') : undefined,
+      recipient: recipient._id,
+      recipientRole: recipient.role,
+      status: 'Pending'
+    });
+
+    await leave.save();
+
+    // Populate employee data
+    await leave.populate('employee', 'firstName lastName email department role');
+
+    console.log('✅ Leave application submitted:', leave._id);
+
+    // Send notification email to managers/HR
+    try {
+      const admins = await User.find({ 
+        role: { $in: ['Admin', 'HR', 'Manager'] } 
+      }).select('firstName lastName email');
+
+      const emailService = require('../utils/emailService');
+      for (const admin of admins) {
+        await emailService.sendLeaveApplicationEmail(admin, leave);
+      }
+    } catch (emailError) {
+      console.error('❌ Failed to send application email:', emailError);
+    }
+
+    // Log the action
+    await Log.create({
+      user: req.user._id,
+      action: 'Leave application submitted',
+      category: 'Leave',
+      details: `Leave application: ${leave.leaveType} from ${leave.startDate.toDateString()} to ${leave.endDate.toDateString()} (${leave.totalDays} days)`,
+      ipAddress: req.ip,
+      method: 'POST',
+      endpoint: '/api/leave/apply',
+      success: true
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Leave application submitted successfully',
+      data: leave
+    });
+
+  } catch (error) {
+    console.error('❌ Error applying for leave:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit leave application',
+      error: error.message
+    });
+  }
+};
+
+// Cancel leave application (employee only)
+exports.cancelLeaveApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the leave request
+    const leave = await Leave.findById(id);
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
+      });
+    }
+
+    // Check if the leave belongs to the current user
+    if (leave.employee.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only cancel your own leave requests'
+      });
+    }
+
+    // Check if leave can be cancelled (only pending leaves)
+    if (leave.status !== 'Pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only pending leave requests can be cancelled'
+      });
+    }
+
+    // Update leave status to cancelled
+    leave.status = 'Cancelled';
+    leave.cancelledAt = new Date();
+    await leave.save();
+
+    console.log('✅ Leave cancelled:', leave._id);
+
+    // Send notification email to employee
+    const emailService = require('../utils/emailService');
+    try {
+      await emailService.sendLeaveCancellationEmail(req.user, leave);
+    } catch (emailError) {
+      console.error('❌ Failed to send cancellation email:', emailError);
+    }
+
+    // Log the action
+    await Log.create({
+      user: req.user._id,
+      action: 'Leave application cancelled',
+      category: 'Leave',
+      details: `Leave cancelled: ${leave.leaveType} from ${leave.startDate.toDateString()} to ${leave.endDate.toDateString()}`,
+      ipAddress: req.ip,
+      method: 'POST',
+      endpoint: '/api/leave/cancel',
+      success: true,
+      metadata: { leaveId: leave._id }
+    });
+
+    res.json({
+      success: true,
+      message: 'Leave request cancelled successfully',
+      data: leave
+    });
+
+  } catch (error) {
+    console.error('❌ Error cancelling leave:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel leave request',
       error: error.message
     });
   }

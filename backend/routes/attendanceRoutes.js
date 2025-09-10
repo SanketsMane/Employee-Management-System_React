@@ -8,7 +8,8 @@ const {
   getTodayAttendance,
   getAttendanceStats,
   getAllAttendance,
-  getEmployeeAttendanceSummary
+  getEmployeeAttendanceSummary,
+  getAttendanceHistory
 } = require('../controllers/attendanceController');
 
 const { protect, authorize, canAccessEmployee, logAction } = require('../utils/roleMiddleware');
@@ -27,6 +28,7 @@ router.put('/break/end', logAction('End Break', 'Attendance'), endBreak);
 // Get attendance data
 router.get('/today', getTodayAttendance);
 router.get('/stats', getAttendanceStats);
+router.get('/history', getAttendanceHistory);
 router.get('/all', authorize('Admin', 'HR', 'Manager', 'Team Lead'), getAllAttendance);
 router.get('/employee-summary', getEmployeeAttendanceSummary);
 router.get('/', getAttendance);

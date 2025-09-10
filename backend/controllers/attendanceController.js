@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
 const Log = require('../models/Log');
+const CompanySettings = require('../models/CompanySettings');
 const { createNotification } = require('./notificationController');
 
 // @desc    Clock in
@@ -9,6 +10,10 @@ const { createNotification } = require('./notificationController');
 // @access  Private
 exports.clockIn = async (req, res) => {
   try {
+    console.log('🕐 Clock in request received');
+    console.log('User:', req.user ? `${req.user.firstName} ${req.user.lastName} (${req.user.role})` : 'No user');
+    console.log('Request body:', req.body);
+
     const { location, notes } = req.body;
     const userId = req.user._id;
     
@@ -18,6 +23,8 @@ exports.clockIn = async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    console.log('📅 Checking for existing attendance between:', today, 'and', tomorrow);
+
     const existingAttendance = await Attendance.findOne({
       employee: userId,
       date: {
@@ -26,7 +33,10 @@ exports.clockIn = async (req, res) => {
       }
     });
 
+    console.log('🔍 Existing attendance:', existingAttendance ? 'Found' : 'Not found');
+
     if (existingAttendance && existingAttendance.clockIn) {
+      console.log('❌ Already clocked in today');
       return res.status(400).json({
         success: false,
         message: 'You have already clocked in today'
@@ -34,6 +44,7 @@ exports.clockIn = async (req, res) => {
     }
 
     const clockInTime = new Date();
+    console.log('⏰ Clock in time:', clockInTime);
     
     // Process location data
     let locationData = {
@@ -57,40 +68,89 @@ exports.clockIn = async (req, res) => {
       }
     }
 
+    console.log('📍 Location data:', locationData);
+
+    // Get company settings for attendance rules
+    const companySettings = await CompanySettings.findOne({ 
+      companyName: req.user.company || 'Default Company',
+      isActive: true 
+    });
+
+    let status = 'Present';
+    let remarks = '';
+    
+    if (companySettings) {
+      console.log('⚙️ Using company settings for attendance calculation');
+      const result = companySettings.calculateAttendanceStatus(clockInTime);
+      status = result.status;
+      remarks = result.remarks;
+      console.log('📊 Calculated status:', status, '- Remarks:', remarks);
+    } else {
+      console.log('⚠️ No company settings found, using default logic');
+      // Default logic for backward compatibility
+      const workStartTime = new Date(today);
+      workStartTime.setHours(9, 0, 0, 0); // 9:00 AM
+      
+      const lateThreshold = new Date(workStartTime);
+      lateThreshold.setMinutes(lateThreshold.getMinutes() + 15); // 9:15 AM
+      
+      if (clockInTime <= workStartTime) {
+        status = 'Present';
+        remarks = 'On time';
+      } else if (clockInTime <= lateThreshold) {
+        status = 'Present';
+        remarks = 'Within grace period';
+      } else {
+        status = 'Late';
+        const minutesLate = Math.round((clockInTime - workStartTime) / (1000 * 60));
+        remarks = `Late by ${minutesLate} minutes`;
+      }
+    }
+
     const attendanceData = {
       employee: userId,
       date: today,
       clockIn: clockInTime,
+      status: status,
+      remarks: remarks,
       location: locationData,
       notes,
       ipAddress: req.ip
     };
 
+    console.log('💾 Creating attendance record with data:', attendanceData);
+
     // Create or update attendance record
     let attendance;
     if (existingAttendance) {
+      console.log('🔄 Updating existing attendance record');
       attendance = await Attendance.findByIdAndUpdate(
         existingAttendance._id,
         attendanceData,
         { new: true }
       ).populate('employee', 'firstName lastName employeeId');
     } else {
+      console.log('🆕 Creating new attendance record');
       attendance = await Attendance.create(attendanceData);
       attendance = await Attendance.findById(attendance._id)
         .populate('employee', 'firstName lastName employeeId');
     }
+
+    console.log('✅ Attendance record created/updated:', attendance._id);
 
     // Award punctuality points (if clocked in before 9:15 AM)
     const punctualTime = new Date(today);
     punctualTime.setHours(9, 15, 0, 0);
 
     if (clockInTime <= punctualTime) {
+      console.log('🌟 Awarding punctuality points');
       await User.findByIdAndUpdate(userId, {
         $inc: { rewardPoints: 5 }
       });
     }
 
     // Log the clock in
+    console.log('📝 Creating log entry');
     await Log.create({
       user: userId,
       action: 'Clock In',
@@ -102,21 +162,31 @@ exports.clockIn = async (req, res) => {
     });
 
     // Create notification
-    await createNotification(
-      userId,
-      'Clock In Successful',
-      `You clocked in at ${clockInTime.toLocaleTimeString()}`,
-      'success',
-      '/attendance'
-    );
+    console.log('🔔 Creating notification');
+    try {
+      await createNotification(
+        userId,                    // senderId
+        userId,                    // recipients
+        'Clock In Successful',     // title
+        `You clocked in at ${clockInTime.toLocaleTimeString()}`, // message
+        'success',                 // type
+        'Medium',                  // priority
+        '/attendance'              // actionUrl
+      );
+      console.log('✅ Notification created successfully');
+    } catch (notificationError) {
+      console.warn('⚠️ Notification creation failed:', notificationError);
+      // Don't fail the entire clock-in process if notification fails
+    }
 
+    console.log('✅ Clock in successful, sending response');
     res.status(201).json({
       success: true,
       message: 'Clocked in successfully',
       data: { attendance }
     });
   } catch (error) {
-    console.error('Clock in error:', error);
+    console.error('❌ Clock in error:', error);
     res.status(500).json({
       success: false,
       message: 'Error clocking in',
@@ -891,6 +961,90 @@ exports.getEmployeeAttendanceSummary = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching employee attendance summary',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get attendance history for calendar view
+// @route   GET /api/attendance/history
+// @access  Private
+exports.getAttendanceHistory = async (req, res) => {
+  try {
+    const { month, year } = req.query;
+    const userId = req.user._id;
+    
+    const targetMonth = parseInt(month) || new Date().getMonth() + 1;
+    const targetYear = parseInt(year) || new Date().getFullYear();
+    
+    console.log(`📅 Fetching attendance history for user ${userId}, month: ${targetMonth}, year: ${targetYear}`);
+    
+    // Create date range for the month
+    const startDate = new Date(targetYear, targetMonth - 1, 1);
+    const endDate = new Date(targetYear, targetMonth, 0, 23, 59, 59);
+    
+    console.log('📅 Date range:', startDate, 'to', endDate);
+    
+    const attendanceRecords = await Attendance.find({
+      employee: userId,
+      date: {
+        $gte: startDate,
+        $lte: endDate
+      }
+    }).sort({ date: 1 });
+    
+    console.log(`📊 Found ${attendanceRecords.length} attendance records`);
+    
+    // Get company settings for consistent status calculation
+    const companySettings = await CompanySettings.findOne({ 
+      companyName: req.user.company || 'Default Company',
+      isActive: true 
+    });
+    
+    // Transform data for calendar view
+    const historyData = attendanceRecords.map(record => {
+      let status = record.status || 'Absent'; // Use stored status if available
+      
+      // If no stored status, calculate based on company settings or default logic
+      if (!record.status && record.clockIn) {
+        if (companySettings) {
+          const result = companySettings.calculateAttendanceStatus(record.clockIn, record.clockOut);
+          status = result.status;
+        } else {
+          // Default logic for backward compatibility
+          const clockInTime = new Date(record.clockIn);
+          const expectedStartTime = 9; // 9 AM
+          
+          if (clockInTime.getHours() > expectedStartTime || 
+             (clockInTime.getHours() === expectedStartTime && clockInTime.getMinutes() > 15)) {
+            status = 'Late';
+          } else {
+            status = 'Present';
+          }
+        }
+      }
+      
+      return {
+        date: record.date,
+        clockInTime: record.clockIn,
+        clockOutTime: record.clockOut,
+        status: status,
+        remarks: record.remarks || '',
+        totalWorkTime: record.totalWorkTime || 0,
+        totalBreakTime: record.totalBreakTime || 0,
+        breaks: record.breaks || []
+      };
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: historyData
+    });
+  } catch (error) {
+    console.error('Get attendance history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching attendance history',
       error: error.message
     });
   }

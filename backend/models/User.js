@@ -66,11 +66,8 @@ const userSchema = new mongoose.Schema({
     trim: true
   },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    country: String
+    type: mongoose.Schema.Types.Mixed, // Allow both string and object
+    default: ''
   },
   skills: [{
     type: String,

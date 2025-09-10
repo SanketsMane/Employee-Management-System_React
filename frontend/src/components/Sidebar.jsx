@@ -63,12 +63,13 @@ const Sidebar = () => {
       icon: User,
       roles: ['all']
     },
-    {
-      title: 'Team Management',
-      href: '/teams',
-      icon: Users,
-      roles: ['Manager', 'Team Lead', 'HR', 'Admin']
-    },
+    // no need of this option as we already have team option to control team members
+    // {
+    //   title: 'Team Management',
+    //   href: '/teams',
+    //   icon: Users,
+    //   roles: ['Manager', 'Team Lead', 'HR', 'Admin']
+    // },
     {
       title: 'Team',
       href: '/team',
@@ -115,6 +116,12 @@ const Sidebar = () => {
       title: 'Manage Bug Reports',
       href: '/admin/bug-reports',
       icon: Bug,
+      roles: ['Admin']
+    },
+    {
+      title: 'Company Settings',
+      href: '/company-settings',
+      icon: Building2,
       roles: ['Admin']
     },
     {

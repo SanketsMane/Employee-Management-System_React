@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 
 const AttendancePage = () => {
   const { user, token } = useAuth();
@@ -76,7 +77,7 @@ const AttendancePage = () => {
       }
     } catch (error) {
       console.error('Error clocking in:', error);
-      alert('Error clocking in. Please try again.');
+      toast.error('Error clocking in. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -99,7 +100,7 @@ const AttendancePage = () => {
       }
     } catch (error) {
       console.error('Error clocking out:', error);
-      alert('Error clocking out. Please try again.');
+      toast.error('Error clocking out. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -118,7 +119,7 @@ const AttendancePage = () => {
       }
     } catch (error) {
       console.error('Error starting break:', error);
-      alert('Error starting break. Please try again.');
+      toast.error('Error starting break. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -135,7 +136,7 @@ const AttendancePage = () => {
       }
     } catch (error) {
       console.error('Error ending break:', error);
-      alert('Error ending break. Please try again.');
+      toast.error('Error ending break. Please try again.');
     } finally {
       setLoading(false);
     }

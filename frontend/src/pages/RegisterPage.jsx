@@ -96,11 +96,11 @@ const RegisterPage = () => {
       });
 
       if (response.data.success) {
-        // Registration successful - redirect to login with approval message
+        // Registration successful - redirect to login with success message
         navigate('/login', { 
           state: { 
-            message: 'Registration successful! Your account is pending admin approval. You will receive an email once approved.',
-            type: 'info'
+            message: 'Registration successful! 🎉 Welcome email sent to your inbox. You can now login with your credentials.',
+            type: 'success'
           } 
         });
       }
@@ -298,6 +298,17 @@ const RegisterPage = () => {
                   className="pl-10 h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500"
                   required
                 />
+              </div>
+            </div>
+
+            {/* Email Notification Info */}
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-start">
+                <Mail className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-sm text-green-700 dark:text-green-300">
+                  <p className="font-medium">Welcome Email Notification</p>
+                  <p>Upon successful registration, you'll receive a welcome email with your account details and instructions to get started.</p>
+                </div>
               </div>
             </div>
 

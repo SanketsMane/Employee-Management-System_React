@@ -38,7 +38,6 @@ const AnalyticsPage = () => {
         loading: false
       });
     } catch (error) {
-      console.error('Error fetching analytics:', error);
       setAnalytics(prev => ({ ...prev, loading: false }));
     }
   };

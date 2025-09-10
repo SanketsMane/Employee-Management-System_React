@@ -6,10 +6,12 @@ const {
   logout,
   forgotPassword,
   changePassword,
-  updateProfile
+  updateProfile,
+  uploadProfilePicture
 } = require('../controllers/authController');
 
 const { protect, authorize, logAction } = require('../utils/roleMiddleware');
+const upload = require('../utils/multerConfig');
 
 const router = express.Router();
 
@@ -23,6 +25,7 @@ router.use(protect); // Apply authentication middleware to all routes below
 
 router.get('/me', logAction('Get Profile', 'Authentication'), getMe);
 router.put('/profile', logAction('Update Profile', 'Authentication'), updateProfile);
+router.post('/profile/picture', upload.single('profilePicture'), logAction('Upload Profile Picture', 'Authentication'), uploadProfilePicture);
 router.post('/logout', logAction('User Logout', 'Authentication'), logout);
 router.put('/changepassword', logAction('Change Password', 'Authentication'), changePassword);
 

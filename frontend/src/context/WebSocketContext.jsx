@@ -21,20 +21,30 @@ export const WebSocketProvider = ({ children }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user && localStorage.getItem('token')) {
-      initializeSocket();
+    const userId = user?._id || user?.id;
+    if (userId && localStorage.getItem('token')) {
+      // Only initialize if we don't have a socket or if the user ID actually changed
+      if (!socket || (socket && userId !== socket.userId)) {
+        initializeSocket();
+      }
     }
 
     return () => {
-      if (socket) {
+      // Only disconnect if component is unmounting or user is logging out
+      if (!user && socket) {
         socket.disconnect();
       }
     };
-  }, [user]);
+  }, [user?._id, user?.id]); // Depend on both _id and id for compatibility
 
   const initializeSocket = () => {
     const token = localStorage.getItem('token');
     if (!token || !user) return;
+
+    // Disconnect existing socket if any
+    if (socket) {
+      socket.disconnect();
+    }
 
     const newSocket = io(import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000', {
       auth: {
@@ -42,6 +52,9 @@ export const WebSocketProvider = ({ children }) => {
       },
       transports: ['websocket', 'polling']
     });
+
+    // Store user ID on socket instance to track changes
+    newSocket.userId = user._id || user.id;
 
     // Connection events
     newSocket.on('connect', () => {

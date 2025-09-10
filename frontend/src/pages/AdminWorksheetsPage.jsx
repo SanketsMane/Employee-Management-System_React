@@ -19,7 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 
 const AdminWorksheetsPage = () => {
-  const { user, isAdmin, isHR } = useAuth();
+  const { user } = useAuth();
   const [worksheets, setWorksheets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,13 +34,16 @@ const AdminWorksheetsPage = () => {
     pendingReview: 0
   });
 
+  // Check if user has admin access
+  const hasAdminAccess = user?.role === 'Admin' || user?.role === 'HR' || user?.role === 'Manager';
+
   useEffect(() => {
-    if (isAdmin || isHR || user?.role === 'Manager') {
+    if (hasAdminAccess) {
       fetchWorksheets();
       fetchDepartments();
       fetchRoles();
     }
-  }, [selectedDepartment, selectedRole, isAdmin, isHR]);
+  }, [selectedDepartment, selectedRole, hasAdminAccess]);
 
   const fetchWorksheets = async () => {
     try {
@@ -164,7 +167,7 @@ const AdminWorksheetsPage = () => {
     window.open(`/worksheets/${worksheetId}`, '_blank');
   };
 
-  if (!isAdmin && !isHR && user?.role !== 'Manager') {
+  if (!hasAdminAccess) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Access denied. Only Admins, HR, and Managers can view worksheets.</p>

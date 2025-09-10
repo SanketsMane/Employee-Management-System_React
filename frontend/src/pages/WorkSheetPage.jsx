@@ -9,7 +9,9 @@ import {
   Trash2,
   Calendar,
   TrendingUp,
-  Target
+  Target,
+  Users,
+  Settings
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -17,9 +19,15 @@ import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import api from '../lib/api';
+import AdminWorksheetPage from './AdminWorksheetPage';
 
 const WorkSheetPage = () => {
   const { user } = useAuth();
+
+  // Redirect Admin, HR, Manager to admin view
+  if (['Admin', 'HR', 'Manager'].includes(user?.role)) {
+    return <AdminWorksheetPage />;
+  }
   const [worksheet, setWorksheet] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);

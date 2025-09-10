@@ -3,6 +3,414 @@ const User = require('../models/User');
 const Log = require('../models/Log');
 const mongoose = require('mongoose');
 
+// @desc    Get all worksheets with advanced filtering (Admin/HR/Manager)
+// @route   GET /api/worksheets/admin/all
+// @access  Private (Admin, HR, Manager)
+exports.getAllWorksheetsAdmin = async (req, res) => {
+  try {
+    const { 
+      startDate, 
+      endDate, 
+      department, 
+      role, 
+      employeeId,
+      status,
+      page = 1, 
+      limit = 20,
+      sortBy = 'date',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    const userRole = req.user.role;
+    const userId = req.user._id;
+
+    // Check permissions
+    if (!['Admin', 'HR', 'Manager'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin, HR, or Manager role required.'
+      });
+    }
+
+    console.log('📊 GET ALL WORKSHEETS ADMIN - User:', req.user.firstName, req.user.lastName, 'Role:', userRole);
+    console.log('📊 Query params:', req.query);
+
+    // Build aggregation pipeline
+    let pipeline = [
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employeeData'
+        }
+      },
+      { $unwind: '$employeeData' },
+      {
+        $match: {
+          'employeeData.isActive': true
+        }
+      }
+    ];
+
+    // Role-based filtering
+    if (userRole === 'Manager') {
+      // Managers can only see their team members
+      const teamMembers = await User.find({ 
+        $or: [
+          { manager: userId },
+          { teamLead: userId }
+        ]
+      }).select('_id');
+      
+      pipeline.push({
+        $match: { 
+          employee: { $in: teamMembers.map(member => member._id) }
+        }
+      });
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      let dateMatch = {};
+      if (startDate) {
+        dateMatch.$gte = new Date(startDate);
+        dateMatch.$gte.setHours(0, 0, 0, 0);
+      }
+      if (endDate) {
+        dateMatch.$lte = new Date(endDate);
+        dateMatch.$lte.setHours(23, 59, 59, 999);
+      }
+      pipeline.push({
+        $match: { date: dateMatch }
+      });
+    }
+
+    // Employee filter
+    if (employeeId) {
+      pipeline.push({
+        $match: { employee: mongoose.Types.ObjectId(employeeId) }
+      });
+    }
+
+    // Department filter
+    if (department) {
+      pipeline.push({
+        $match: { 'employeeData.department': department }
+      });
+    }
+
+    // Role filter
+    if (role) {
+      pipeline.push({
+        $match: { 'employeeData.role': role }
+      });
+    }
+
+    // Status filter
+    if (status) {
+      pipeline.push({
+        $match: { approvalStatus: status }
+      });
+    }
+
+    // Count total before pagination
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const totalResult = await WorkSheet.aggregate(countPipeline);
+    const total = totalResult[0]?.total || 0;
+
+    // Add sorting
+    const sortOptions = {};
+    if (sortBy === 'employee') {
+      sortOptions['employeeData.firstName'] = sortOrder === 'asc' ? 1 : -1;
+    } else if (sortBy === 'department') {
+      sortOptions['employeeData.department'] = sortOrder === 'asc' ? 1 : -1;
+    } else if (sortBy === 'productivity') {
+      sortOptions['productivityScore'] = sortOrder === 'asc' ? 1 : -1;
+    } else {
+      sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    }
+
+    pipeline.push(
+      { $sort: sortOptions },
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) }
+    );
+
+    // Add projection
+    pipeline.push({
+      $project: {
+        _id: 1,
+        date: 1,
+        timeSlots: 1,
+        totalTasksPlanned: 1,
+        totalTasksCompleted: 1,
+        productivityScore: 1,
+        submittedAt: 1,
+        isSubmitted: 1,
+        approvalStatus: 1,
+        feedback: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        employee: {
+          _id: '$employeeData._id',
+          firstName: '$employeeData.firstName',
+          lastName: '$employeeData.lastName',
+          employeeId: '$employeeData.employeeId',
+          department: '$employeeData.department',
+          role: '$employeeData.role',
+          position: '$employeeData.position',
+          email: '$employeeData.email'
+        }
+      }
+    });
+
+    const worksheets = await WorkSheet.aggregate(pipeline);
+
+    console.log('📊 Results:', {
+      worksheetsFound: worksheets.length,
+      total: total,
+      sampleWorksheet: worksheets[0] ? {
+        employee: worksheets[0].employee.firstName + ' ' + worksheets[0].employee.lastName,
+        date: worksheets[0].date,
+        department: worksheets[0].employee.department,
+        status: worksheets[0].approvalStatus
+      } : null
+    });
+
+    res.status(200).json({
+      success: true,
+      count: worksheets.length,
+      total,
+      pagination: {
+        page: parseInt(page),
+        pages: Math.ceil(total / parseInt(limit)),
+        limit: parseInt(limit)
+      },
+      data: { worksheets }
+    });
+  } catch (error) {
+    console.error('❌ Get all worksheets admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching worksheets',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Export worksheets data
+// @route   GET /api/worksheets/admin/export
+// @access  Private (Admin, HR, Manager)
+exports.exportWorksheets = async (req, res) => {
+  try {
+    const { 
+      startDate, 
+      endDate, 
+      department, 
+      role, 
+      employeeId,
+      status,
+      format = 'json'
+    } = req.query;
+    
+    const userRole = req.user.role;
+    const userId = req.user._id;
+
+    // Check permissions
+    if (!['Admin', 'HR', 'Manager'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin, HR, or Manager role required.'
+      });
+    }
+
+    console.log('📥 EXPORT WORKSHEETS - User:', req.user.firstName, req.user.lastName, 'Role:', userRole);
+    console.log('📥 Export params:', req.query);
+
+    // Build aggregation pipeline (similar to getAllWorksheetsAdmin but without pagination)
+    let pipeline = [
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employeeData'
+        }
+      },
+      { $unwind: '$employeeData' },
+      {
+        $match: {
+          'employeeData.isActive': true
+        }
+      }
+    ];
+
+    // Role-based filtering
+    if (userRole === 'Manager') {
+      const teamMembers = await User.find({ 
+        $or: [
+          { manager: userId },
+          { teamLead: userId }
+        ]
+      }).select('_id');
+      
+      pipeline.push({
+        $match: { 
+          employee: { $in: teamMembers.map(member => member._id) }
+        }
+      });
+    }
+
+    // Apply filters
+    if (startDate || endDate) {
+      let dateMatch = {};
+      if (startDate) {
+        dateMatch.$gte = new Date(startDate);
+        dateMatch.$gte.setHours(0, 0, 0, 0);
+      }
+      if (endDate) {
+        dateMatch.$lte = new Date(endDate);
+        dateMatch.$lte.setHours(23, 59, 59, 999);
+      }
+      pipeline.push({ $match: { date: dateMatch } });
+    }
+
+    if (employeeId) {
+      pipeline.push({ $match: { employee: mongoose.Types.ObjectId(employeeId) } });
+    }
+
+    if (department) {
+      pipeline.push({ $match: { 'employeeData.department': department } });
+    }
+
+    if (role) {
+      pipeline.push({ $match: { 'employeeData.role': role } });
+    }
+
+    if (status) {
+      pipeline.push({ $match: { approvalStatus: status } });
+    }
+
+    // Add sorting
+    pipeline.push({ $sort: { date: -1, 'employeeData.firstName': 1 } });
+
+    // Enhanced projection for export
+    pipeline.push({
+      $project: {
+        _id: 1,
+        date: 1,
+        timeSlots: 1,
+        totalTasksPlanned: 1,
+        totalTasksCompleted: 1,
+        productivityScore: 1,
+        submittedAt: 1,
+        isSubmitted: 1,
+        approvalStatus: 1,
+        feedback: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        employee: {
+          _id: '$employeeData._id',
+          firstName: '$employeeData.firstName',
+          lastName: '$employeeData.lastName',
+          employeeId: '$employeeData.employeeId',
+          department: '$employeeData.department',
+          role: '$employeeData.role',
+          position: '$employeeData.position',
+          email: '$employeeData.email'
+        }
+      }
+    });
+
+    const worksheets = await WorkSheet.aggregate(pipeline);
+
+    // Log export action
+    await Log.create({
+      user: userId,
+      action: 'Worksheet Export',
+      category: 'Worksheet',
+      details: `Exported ${worksheets.length} worksheets. Filters: ${JSON.stringify(req.query)}`,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      success: true
+    });
+
+    if (format === 'csv') {
+      // Convert to CSV format
+      const csvData = convertToCSV(worksheets);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=worksheets_export_${new Date().toISOString().split('T')[0]}.csv`);
+      res.send(csvData);
+    } else {
+      // Return JSON format
+      res.status(200).json({
+        success: true,
+        count: worksheets.length,
+        exportedAt: new Date().toISOString(),
+        filters: req.query,
+        data: { worksheets }
+      });
+    }
+  } catch (error) {
+    console.error('❌ Export worksheets error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error exporting worksheets',
+      error: error.message
+    });
+  }
+};
+
+// Helper function to convert worksheets to CSV
+function convertToCSV(worksheets) {
+  const headers = [
+    'Employee ID',
+    'Employee Name',
+    'Email', 
+    'Department',
+    'Role',
+    'Date',
+    'Total Tasks Planned',
+    'Total Tasks Completed',
+    'Productivity Score (%)',
+    'Submission Status',
+    'Approval Status',
+    'Submitted At',
+    'Tasks Details',
+    'Feedback'
+  ];
+
+  let csv = headers.join(',') + '\n';
+
+  worksheets.forEach(worksheet => {
+    const tasksDetails = worksheet.timeSlots.map(slot => 
+      `${slot.hour}:00 - ${slot.task} (${slot.status})`
+    ).join('; ');
+
+    const row = [
+      worksheet.employee.employeeId,
+      `"${worksheet.employee.firstName} ${worksheet.employee.lastName}"`,
+      worksheet.employee.email,
+      worksheet.employee.department,
+      worksheet.employee.role,
+      new Date(worksheet.date).toLocaleDateString(),
+      worksheet.totalTasksPlanned,
+      worksheet.totalTasksCompleted,
+      worksheet.productivityScore,
+      worksheet.isSubmitted ? 'Submitted' : 'Not Submitted',
+      worksheet.approvalStatus,
+      worksheet.submittedAt ? new Date(worksheet.submittedAt).toLocaleString() : 'Not Submitted',
+      `"${tasksDetails}"`,
+      `"${worksheet.feedback || ''}"`
+    ];
+
+    csv += row.join(',') + '\n';
+  });
+
+  return csv;
+}
+
 // @desc    Create or update worksheet
 // @route   POST /api/worksheets
 // @access  Private

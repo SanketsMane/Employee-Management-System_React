@@ -6,7 +6,9 @@ const {
   getTodayWorksheet,
   submitWorksheet,
   approveWorksheet,
-  getWorksheetStats
+  getWorksheetStats,
+  getAllWorksheetsAdmin,
+  exportWorksheets
 } = require('../controllers/sheetController');
 
 const { protect, authorize, logAction } = require('../utils/roleMiddleware');
@@ -15,6 +17,19 @@ const router = express.Router();
 
 // Apply authentication middleware to all routes
 router.use(protect);
+
+// Admin/Manager routes (must be before general routes)
+router.get('/admin/all', 
+  authorize('Admin', 'HR', 'Manager'),
+  logAction('View All Worksheets', 'Worksheet'), 
+  getAllWorksheetsAdmin
+);
+
+router.get('/admin/export', 
+  authorize('Admin', 'HR', 'Manager'),
+  logAction('Export Worksheets', 'Worksheet'), 
+  exportWorksheets
+);
 
 // Worksheet operations
 router.post('/', logAction('Create/Update Worksheet', 'Worksheet'), createOrUpdateWorksheet);

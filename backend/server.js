@@ -94,9 +94,15 @@ const corsOptions = {
       'http://localhost:5000',
       'http://localhost:5174',
       'http://localhost:5175',
-      // Add your Hostinger domain here
-      'https://your-hostinger-domain.com',
-      'http://your-hostinger-domain.com',
+      // Production domains
+      'https://ems.formonex.in',
+      'https://formonex.in',
+      'http://ems.formonex.in',
+      'http://formonex.in',
+      // AWS EC2 domains
+      'http://43.205.116.48:8000',
+      'http://ec2-43-205-116-48.ap-south-1.compute.amazonaws.com:8000',
+      'https://ec2-43-205-116-48.ap-south-1.compute.amazonaws.com:8000',
       // Add any additional domains
       'https://www.your-hostinger-domain.com'
     ];

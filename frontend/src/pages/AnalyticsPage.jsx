@@ -42,7 +42,6 @@ const AnalyticsPage = () => {
         ? leavesRes.value.data.data 
         : {};
 
-      console.log('Analytics data:', { overview, attendance, leaves });
 
       setAnalytics({
         overview,
@@ -52,7 +51,6 @@ const AnalyticsPage = () => {
         loading: false
       });
     } catch (error) {
-      console.error('Error fetching analytics:', error);
       setAnalytics(prev => ({ ...prev, loading: false }));
     }
   };
