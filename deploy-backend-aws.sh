@@ -66,11 +66,23 @@ pm2 startup
 echo "🌐 Installing Nginx..."
 sudo yum install -y nginx
 
-# Create Nginx configuration
+# Create Nginx configuration with SSL support
 sudo tee /etc/nginx/conf.d/ems-backend.conf > /dev/null <<EOF
 server {
     listen 80;
     server_name 43.205.116.48 ec2-43-205-116-48.ap-south-1.compute.amazonaws.com;
+    return 301 https://\$server_name\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name 43.205.116.48 ec2-43-205-116-48.ap-south-1.compute.amazonaws.com;
+
+    # SSL configuration - you'll need to add your SSL certificates
+    ssl_certificate /etc/ssl/certs/server.crt;
+    ssl_certificate_key /etc/ssl/private/server.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
 
     # API routes
     location /api {
