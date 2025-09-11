@@ -67,6 +67,8 @@ exports.getSystemConfig = async (req, res) => {
 exports.getAllSystemConfigs = async (req, res) => {
   try {
     console.log('🔧 Getting all system configurations');
+    console.log('🔧 User:', req.user ? `${req.user.firstName} ${req.user.lastName}` : 'No user');
+    console.log('🔧 User role:', req.user?.role);
     
     const configs = await SystemConfig.find({ 
       companyId: null 
@@ -399,4 +401,13 @@ exports.reorderConfigItems = async (req, res) => {
       error: error.message
     });
   }
+};
+
+module.exports = {
+  getSystemConfig: exports.getSystemConfig,
+  getAllSystemConfigs: exports.getAllSystemConfigs,
+  addConfigItem: exports.addConfigItem,
+  updateConfigItem: exports.updateConfigItem,
+  deleteConfigItem: exports.deleteConfigItem,
+  reorderConfigItems: exports.reorderConfigItems
 };

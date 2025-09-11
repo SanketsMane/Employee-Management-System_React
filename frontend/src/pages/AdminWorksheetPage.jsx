@@ -76,10 +76,15 @@ const AdminWorksheetPage = () => {
   });
 
   useEffect(() => {
+    console.log('🔄 AdminWorksheetPage useEffect triggered');
+    console.log('🔄 User:', user?.firstName, user?.lastName, 'Role:', user?.role);
     if (user && ['Admin', 'HR', 'Manager'].includes(user.role)) {
+      console.log('✅ User authorized, calling fetch functions...');
       fetchWorksheets();
       fetchEmployees();
       fetchStats();
+    } else {
+      console.log('❌ User not authorized or not loaded yet');
     }
   }, [user, filters, pagination.page, sorting]);
 
@@ -129,20 +134,27 @@ const AdminWorksheetPage = () => {
   // Fetch employees for filter dropdown
   const fetchEmployees = async () => {
     try {
+      console.log('🔍 AdminWorksheetPage: Starting fetchEmployees...');
       const response = await api.get('/admin/users/employees');
       if (response.data.success) {
         setEmployees(response.data.data.users);
+        console.log('✅ AdminWorksheetPage: Employees fetched successfully');
       }
 
       // Fetch system configurations for departments and roles
       try {
+        console.log('🔧 AdminWorksheetPage: Calling system config API...');
         const configResponse = await api.get('/system/config');
+        console.log('🔧 AdminWorksheetPage: System config response:', configResponse.data);
         if (configResponse.data.success) {
           const configs = configResponse.data.data;
           setFilterOptions({
             departments: configs.departments?.map(item => item.name) || [],
             roles: configs.roles?.map(item => item.name) || []
           });
+          console.log('✅ AdminWorksheetPage: System config loaded successfully');
+          console.log('🏢 Departments:', configs.departments?.map(item => item.name) || []);
+          console.log('👔 Roles:', configs.roles?.map(item => item.name) || []);
         }
       } catch (configError) {
         console.error('❌ Error fetching system config, falling back to user data:', configError);
@@ -155,6 +167,8 @@ const AdminWorksheetPage = () => {
             departments: departments.filter(Boolean),
             roles: roles.filter(Boolean)
           });
+          console.log('🔄 Using fallback departments:', departments.filter(Boolean));
+          console.log('🔄 Using fallback roles:', roles.filter(Boolean));
         }
       }
     } catch (error) {
