@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,8 @@ import {
   MessageSquare,
   BarChart3,
   TrendingUp,
-  Users
+  Users,
+  Info
 } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -60,7 +61,8 @@ const AdminBugReportsPage = () => {
     'in-progress': { label: 'In Progress', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
     resolved: { label: 'Resolved', color: 'bg-green-100 text-green-800', icon: CheckCircle },
     closed: { label: 'Closed', color: 'bg-gray-100 text-gray-800', icon: XCircle },
-    rejected: { label: 'Rejected', color: 'bg-red-100 text-red-800', icon: XCircle }
+    rejected: { label: 'Rejected', color: 'bg-red-100 text-red-800', icon: XCircle },
+    'needs-more-info': { label: 'Needs More Info', color: 'bg-orange-100 text-orange-800', icon: Info }
   };
 
   const priorityConfig = {
@@ -126,7 +128,7 @@ const AdminBugReportsPage = () => {
     }
   };
 
-  const handleUpdateBugReport = (bugReport) => {
+  const handleUpdateBugReport = useCallback((bugReport) => {
     setSelectedBugReport(bugReport);
     setUpdateForm({
       status: bugReport.status,
@@ -135,9 +137,9 @@ const AdminBugReportsPage = () => {
       resolution: bugReport.resolution || ''
     });
     setShowUpdateDialog(true);
-  };
+  }, []);
 
-  const handleSubmitUpdate = async () => {
+  const handleSubmitUpdate = useCallback(async () => {
     try {
       const updateData = {
         ...updateForm,
@@ -150,12 +152,29 @@ const AdminBugReportsPage = () => {
     } catch (error) {
       toast.error('Failed to update bug report');
     }
-  };
+  }, [updateForm, selectedBugReport]);
 
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
+  }, []);
+
+  // Stable form field handlers
+  const handleStatusChange = useCallback((e) => {
+    setUpdateForm(prev => ({ ...prev, status: e.target.value }));
+  }, []);
+
+  const handleAssignedToChange = useCallback((e) => {
+    setUpdateForm(prev => ({ ...prev, assignedTo: e.target.value }));
+  }, []);
+
+  const handleAdminNotesChange = useCallback((e) => {
+    setUpdateForm(prev => ({ ...prev, adminNotes: e.target.value }));
+  }, []);
+
+  const handleResolutionChange = useCallback((e) => {
+    setUpdateForm(prev => ({ ...prev, resolution: e.target.value }));
+  }, []);
 
   const getStatusCount = (status) => {
     const statusItem = summary.status.find(item => item._id === status);
@@ -486,66 +505,64 @@ const AdminBugReportsPage = () => {
         <div className="space-y-4">
           {/* Status */}
           <div className="space-y-2">
-            <Label>Status</Label>
-            <Select 
+            <Label htmlFor="status-select">Status</Label>
+            <select 
+              id="status-select"
               value={updateForm.status} 
-              onValueChange={(value) => setUpdateForm(prev => ({ ...prev, status: value }))}
+              onChange={handleStatusChange}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(statusConfig).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    {config.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {Object.entries(statusConfig).map(([key, config]) => (
+                <option key={key} value={key}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Assign To */}
           <div className="space-y-2">
-            <Label>Assign To</Label>
-            <Select 
+            <Label htmlFor="assign-select">Assign To</Label>
+            <select 
+              id="assign-select"
               value={updateForm.assignedTo} 
-              onValueChange={(value) => setUpdateForm(prev => ({ ...prev, assignedTo: value }))}
+              onChange={handleAssignedToChange}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select user to assign" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {users.filter(user => ['Admin', 'HR', 'Manager'].includes(user.role)).map(user => (
-                  <SelectItem key={user._id} value={user._id}>
-                    {user.firstName} {user.lastName} ({user.role})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="unassigned">Unassigned</option>
+              {users.filter(user => ['Admin', 'HR', 'Manager'].includes(user.role)).map(user => (
+                <option key={user._id} value={user._id}>
+                  {user.firstName} {user.lastName} ({user.role})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Admin Notes */}
           <div className="space-y-2">
-            <Label>Admin Notes</Label>
+            <Label htmlFor="admin-notes">Admin Notes</Label>
             <Textarea
+              id="admin-notes"
               placeholder="Add notes about this bug report..."
               value={updateForm.adminNotes}
-              onChange={(e) => setUpdateForm(prev => ({ ...prev, adminNotes: e.target.value }))}
+              onChange={handleAdminNotesChange}
               rows={3}
+              autoComplete="off"
             />
           </div>
 
           {/* Resolution (only if status is resolved or closed) */}
           {(updateForm.status === 'resolved' || updateForm.status === 'closed') && (
             <div className="space-y-2">
-              <Label>Resolution</Label>
+              <Label htmlFor="resolution">Resolution</Label>
               <Textarea
+                id="resolution"
                 placeholder="Describe how this bug was resolved..."
                 value={updateForm.resolution}
-                onChange={(e) => setUpdateForm(prev => ({ ...prev, resolution: e.target.value }))}
+                onChange={handleResolutionChange}
                 rows={3}
                 required
+                autoComplete="off"
               />
             </div>
           )}

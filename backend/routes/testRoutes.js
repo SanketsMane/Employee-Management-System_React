@@ -64,6 +64,6 @@ router.get('/attendance-debug', protect, async (req, res) => {
 });
 
 // Test email endpoint (admin only)
-router.post('/email', protect, authorize(['Admin']), testEmail);
+router.post('/email', protect, authorize('Admin'), testEmail);
 
 module.exports = router;

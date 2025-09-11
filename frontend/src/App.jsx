@@ -29,6 +29,9 @@ import AdminLeaveManagement from './pages/AdminLeaveManagement';
 import EmployeeLeaveManagement from './pages/EmployeeLeaveManagement';
 import BugReportsPage from './pages/BugReportsPage';
 import AdminBugReportsPage from './pages/AdminBugReportsPage';
+import AssignedBugsPage from './pages/AssignedBugsPage';
+import AdminAnnouncementsPage from './pages/AdminAnnouncementsPage';
+import EmployeeAnnouncementsPage from './pages/EmployeeAnnouncementsPage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
 import SystemConfigPage from './pages/SystemConfigPage';
 import Sidebar from './components/Sidebar';
@@ -299,6 +302,36 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <BugReportsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/assigned-bugs" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AssignedBugsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/announcements" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EmployeeAnnouncementsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/announcements" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AdminAnnouncementsPage />
               </Layout>
             </ProtectedRoute>
           } 

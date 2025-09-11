@@ -45,7 +45,8 @@ const BugReportsPage = () => {
     'in-progress': { label: 'In Progress', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
     resolved: { label: 'Resolved', color: 'bg-green-100 text-green-800', icon: CheckCircle },
     closed: { label: 'Closed', color: 'bg-gray-100 text-gray-800', icon: XCircle },
-    rejected: { label: 'Rejected', color: 'bg-red-100 text-red-800', icon: XCircle }
+    rejected: { label: 'Rejected', color: 'bg-red-100 text-red-800', icon: XCircle },
+    'needs-more-info': { label: 'Needs More Info', color: 'bg-orange-100 text-orange-800', icon: MessageSquare }
   };
 
   const priorityConfig = {

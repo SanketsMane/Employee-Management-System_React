@@ -138,7 +138,7 @@ exports.canAccessEmployee = async (req, res, next) => {
 };
 
 // Log user actions
-exports.logAction = (action, category) => {
+exports.logAction = (action, category = 'General') => {
   return async (req, res, next) => {
     const originalSend = res.send;
     const startTime = Date.now();

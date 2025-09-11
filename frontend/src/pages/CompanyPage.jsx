@@ -51,39 +51,26 @@ const CompanyPage = () => {
   const fetchCompanyData = async () => {
     try {
       setCompanyData(prev => ({ ...prev, loading: true }));
-      console.log('🔍 Starting company data fetch...');
-      console.log('👤 Current user:', user);
       
       // Fetch company info and stats
-      console.log('📡 Making API calls...');
       const [companyRes, statsRes, usersRes] = await Promise.all([
         api.get('/company/info').catch(err => {
-          console.error('❌ Company info API error:', err.response?.data || err.message);
           return { data: { success: false, error: err.response?.data?.message || err.message } };
         }),
         api.get('/analytics/overview').catch(err => {
-          console.error('❌ Analytics API error:', err.response?.data || err.message);
           return { data: { success: false, error: err.response?.data?.message || err.message } };
         }),
         api.get('/users').catch(err => {
-          console.error('❌ Users API error:', err.response?.data || err.message);
           return { data: { success: false, error: err.response?.data?.message || err.message } };
         })
       ]);
 
-      console.log('📊 API Responses:');
-      console.log('Company API success:', companyRes.data.success);
-      console.log('Analytics API success:', statsRes.data.success);
-      console.log('Users API success:', usersRes.data.success);
-
       let companyInfo = {};
       if (companyRes.data.success) {
-        console.log('✅ Company data received:', companyRes.data.data);
         // The backend returns nested structure: { info: {...}, stats: {...}, departments: [...] }
         const companyResponse = companyRes.data.data;
         companyInfo = companyResponse.info || companyResponse;
       } else {
-        console.log('⚠️ Company API failed, using default data. Error:', companyRes.data.error);
         // Default company info
         companyInfo = {
           name: 'Employee Management System',
@@ -99,24 +86,18 @@ const CompanyPage = () => {
 
       let stats = {};
       if (statsRes.data.success) {
-        console.log('✅ Stats data received:', statsRes.data.data);
         stats = statsRes.data.data;
-      } else {
-        console.log('⚠️ Analytics API failed, using empty stats. Error:', statsRes.data.error);
       }
 
       // If company response has stats, use those instead
       if (companyRes.data.success && companyRes.data.data.stats) {
         stats = { ...stats, ...companyRes.data.data.stats };
-        console.log('📊 Using company stats:', stats);
       }
 
       // Get department statistics from users data
       let departments = [];
       if (usersRes.data.success) {
-        console.log('✅ Users data received');
         const users = usersRes.data.data?.users || usersRes.data.users || usersRes.data.data || [];
-        console.log('👥 Total users found:', users.length);
         const departmentCounts = {};
         
         users.forEach(user => {
@@ -135,23 +116,12 @@ const CompanyPage = () => {
           name,
           ...counts
         }));
-        console.log('🏢 Departments processed:', departments);
-      } else {
-        console.log('⚠️ Users API failed, no department data. Error:', usersRes.data.error);
       }
 
       // If company response has departments, use those instead
       if (companyRes.data.success && companyRes.data.data.departments) {
         departments = companyRes.data.data.departments;
-        console.log('🏢 Using company departments:', departments);
       }
-
-      console.log('🏢 Final company data prepared:', {
-        info: companyInfo,
-        stats,
-        departments: departments.length,
-        announcements: 1
-      });
 
       // Use announcements from company response if available
       let announcements = [
@@ -198,10 +168,8 @@ const CompanyPage = () => {
   const handleUpdateCompany = async () => {
     try {
       setSaving(true);
-      console.log('🔄 Updating company info with data:', formData);
       
       const response = await api.put('/company/info', formData);
-      console.log('✅ Company update response:', response.data);
 
       if (response.data.success) {
         setCompanyData(prev => ({
@@ -217,7 +185,6 @@ const CompanyPage = () => {
         alert('Failed to update company information: ' + (response.data.message || 'Unknown error'));
       }
     } catch (error) {
-      console.error('❌ Company update error:', error);
       alert('Error updating company information: ' + (error.response?.data?.message || error.message));
     } finally {
       setSaving(false);

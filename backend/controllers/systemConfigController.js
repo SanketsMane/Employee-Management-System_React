@@ -66,9 +66,6 @@ exports.getSystemConfig = async (req, res) => {
 // @access  Private (Admin, HR, Manager, Team Lead)
 exports.getAllSystemConfigs = async (req, res) => {
   try {
-    console.log('🔧 Getting all system configurations');
-    console.log('🔧 User:', req.user ? `${req.user.firstName} ${req.user.lastName}` : 'No user');
-    console.log('🔧 User role:', req.user?.role);
     
     const configs = await SystemConfig.find({ 
       companyId: null 

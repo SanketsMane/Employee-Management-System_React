@@ -180,6 +180,7 @@ app.use('/api/company', companyRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/bug-reports', bugReportRoutes);
 app.use('/api/system/config', systemConfigRoutes);
+app.use('/api/announcements', require('./routes/announcementRoutes'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

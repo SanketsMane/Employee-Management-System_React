@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
-import NotificationDropdown from './notifications/NotificationDropdown';
+import UnifiedNotifications from './notifications/UnifiedNotifications';
 import BugReportDialog from './BugReportDialog';
 import { 
   Sun, 
@@ -17,11 +18,22 @@ import { cn } from '../lib/utils';
 
 const Navbar = () => {
   const { user, logout, darkMode, toggleDarkMode } = useAuth();
+  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showBugReportDialog, setShowBugReportDialog] = useState(false);
 
   const handleLogout = async () => {
     await logout();
+    setShowUserMenu(false);
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+    setShowUserMenu(false);
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
     setShowUserMenu(false);
   };
 
@@ -88,8 +100,8 @@ const Navbar = () => {
             <Bug className="h-4 w-4" />
           </Button>
 
-          {/* Notifications */}
-          <NotificationDropdown />
+          {/* Unified Notifications */}
+          <UnifiedNotifications />
 
           {/* User Menu */}
           <div className="relative">
@@ -132,11 +144,17 @@ const Navbar = () => {
                 </div>
 
                 <div className="p-2">
-                  <button className="flex items-center gap-2 w-full px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-sm">
+                  <button 
+                    onClick={handleProfileClick}
+                    className="flex items-center gap-2 w-full px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-sm"
+                  >
                     <User className="h-4 w-4" />
                     Profile
                   </button>
-                  <button className="flex items-center gap-2 w-full px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-sm">
+                  <button 
+                    onClick={handleSettingsClick}
+                    className="flex items-center gap-2 w-full px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-sm"
+                  >
                     <Settings className="h-4 w-4" />
                     Settings
                   </button>

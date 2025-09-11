@@ -100,8 +100,6 @@ const AdminLeaveManagement = () => {
         }
       });
 
-      console.log('🔍 Fetching leaves with params:', Object.fromEntries(params));
-
       const response = await api.get(`/leaves/admin/all?${params}`);
       
       if (response.data.success) {
@@ -114,8 +112,6 @@ const AdminLeaveManagement = () => {
         
         // Calculate stats
         calculateStats(response.data.data.leaves);
-        
-        console.log('✅ Fetched leaves:', response.data.data.leaves.length);
       }
     } catch (error) {
       console.error('❌ Error fetching leaves:', error);
@@ -128,7 +124,7 @@ const AdminLeaveManagement = () => {
   // Fetch employees for filter dropdown
   const fetchEmployees = async () => {
     try {
-      const response = await api.get('/users/all');
+      const response = await api.get('/users');
       if (response.data.success) {
         setEmployees(response.data.data.users.filter(emp => emp.role !== 'Admin'));
       }
@@ -154,7 +150,6 @@ const AdminLeaveManagement = () => {
       if (Date.now() - lastRefreshTime > 30000) { // 30 seconds
         fetchLeaves();
         setLastRefreshTime(Date.now());
-        console.log('🔄 Auto-refreshing leave data...');
       }
     }, 30000);
 

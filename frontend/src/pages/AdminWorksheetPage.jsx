@@ -76,15 +76,10 @@ const AdminWorksheetPage = () => {
   });
 
   useEffect(() => {
-    console.log('🔄 AdminWorksheetPage useEffect triggered');
-    console.log('🔄 User:', user?.firstName, user?.lastName, 'Role:', user?.role);
     if (user && ['Admin', 'HR', 'Manager'].includes(user.role)) {
-      console.log('✅ User authorized, calling fetch functions...');
       fetchWorksheets();
       fetchEmployees();
       fetchStats();
-    } else {
-      console.log('❌ User not authorized or not loaded yet');
     }
   }, [user, filters, pagination.page, sorting]);
 
@@ -108,8 +103,6 @@ const AdminWorksheetPage = () => {
         }
       });
 
-      console.log('🔍 Fetching worksheets with params:', Object.fromEntries(params));
-
       const response = await api.get(`/worksheets/admin/all?${params}`);
       
       if (response.data.success) {
@@ -120,8 +113,6 @@ const AdminWorksheetPage = () => {
           total: response.data.total,
           pages: response.data.pagination.pages
         }));
-        
-        console.log('✅ Fetched worksheets:', worksheetData.length);
       }
     } catch (error) {
       console.error('❌ Error fetching worksheets:', error);
@@ -134,30 +125,22 @@ const AdminWorksheetPage = () => {
   // Fetch employees for filter dropdown
   const fetchEmployees = async () => {
     try {
-      console.log('🔍 AdminWorksheetPage: Starting fetchEmployees...');
-      const response = await api.get('/admin/users/employees');
+      const response = await api.get('/admin/users');
       if (response.data.success) {
         setEmployees(response.data.data.users);
-        console.log('✅ AdminWorksheetPage: Employees fetched successfully');
       }
 
       // Fetch system configurations for departments and roles
       try {
-        console.log('🔧 AdminWorksheetPage: Calling system config API...');
         const configResponse = await api.get('/system/config');
-        console.log('🔧 AdminWorksheetPage: System config response:', configResponse.data);
         if (configResponse.data.success) {
           const configs = configResponse.data.data;
           setFilterOptions({
             departments: configs.departments?.map(item => item.name) || [],
             roles: configs.roles?.map(item => item.name) || []
           });
-          console.log('✅ AdminWorksheetPage: System config loaded successfully');
-          console.log('🏢 Departments:', configs.departments?.map(item => item.name) || []);
-          console.log('👔 Roles:', configs.roles?.map(item => item.name) || []);
         }
       } catch (configError) {
-        console.error('❌ Error fetching system config, falling back to user data:', configError);
         // Fallback to extracting from existing users if system config fails
         if (response.data.success) {
           const departments = [...new Set(response.data.data.users.map(emp => emp.department))];
@@ -167,8 +150,6 @@ const AdminWorksheetPage = () => {
             departments: departments.filter(Boolean),
             roles: roles.filter(Boolean)
           });
-          console.log('🔄 Using fallback departments:', departments.filter(Boolean));
-          console.log('🔄 Using fallback roles:', roles.filter(Boolean));
         }
       }
     } catch (error) {
@@ -176,7 +157,6 @@ const AdminWorksheetPage = () => {
     }
   };
 
-  // Calculate statistics
   // Fetch comprehensive statistics
   const fetchStats = async () => {
     try {
@@ -188,8 +168,6 @@ const AdminWorksheetPage = () => {
       const start = new Date(startDate);
       const end = new Date(endDate);
       const periodDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      
-      console.log('📊 Fetching stats for period:', periodDays, 'days');
       
       // For admin, get overall stats by fetching all worksheets in the period
       const params = new URLSearchParams({
@@ -251,14 +229,6 @@ const AdminWorksheetPage = () => {
     };
 
     setStats(newStats);
-    
-    console.log('📊 Stats calculated from', worksheetData.length, 'worksheets:', {
-      total: totalWorksheets,
-      approved: approvedWorksheets,
-      rejected: rejectedWorksheets,
-      pending: pendingWorksheets,
-      avgProductivity: averageProductivity.toFixed(1) + '%'
-    });
   };
 
   const calculateStats = (worksheetData = worksheets) => {
@@ -312,8 +282,6 @@ const AdminWorksheetPage = () => {
       });
 
       params.append('format', format);
-
-      console.log('📥 Exporting worksheets with params:', Object.fromEntries(params));
 
       if (format === 'csv') {
         // For CSV, we need to handle the response differently
@@ -447,6 +415,21 @@ const AdminWorksheetPage = () => {
     );
   }
 
+  // Show loading state
+  if (loading && worksheets.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <RefreshCw className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
+            <h2 className="text-xl font-semibold mb-2">Loading Worksheets</h2>
+            <p className="text-gray-600">Please wait while we fetch the data...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Header */}
@@ -558,7 +541,7 @@ const AdminWorksheetPage = () => {
                 onChange={(e) => handleFilterChange('department', e.target.value)}
               >
                 <option value="">All Departments</option>
-                {filterOptions.departments.map(dept => (
+                {filterOptions.departments?.map(dept => (
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
               </select>
@@ -573,7 +556,7 @@ const AdminWorksheetPage = () => {
                 onChange={(e) => handleFilterChange('role', e.target.value)}
               >
                 <option value="">All Roles</option>
-                {filterOptions.roles.map(role => (
+                {filterOptions.roles?.map(role => (
                   <option key={role} value={role}>{role}</option>
                 ))}
               </select>
@@ -588,7 +571,7 @@ const AdminWorksheetPage = () => {
                 onChange={(e) => handleFilterChange('employeeId', e.target.value)}
               >
                 <option value="">All Employees</option>
-                {employees.map(emp => (
+                {employees?.map(emp => (
                   <option key={emp._id} value={emp._id}>
                     {emp.firstName} {emp.lastName} ({emp.employeeId})
                   </option>
@@ -722,40 +705,40 @@ const AdminWorksheetPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {worksheets.map((worksheet) => (
-                      <tr key={worksheet._id} className="border-b hover:bg-gray-50">
+                    {worksheets?.map((worksheet) => (
+                      <tr key={worksheet?._id} className="border-b hover:bg-gray-50">
                         <td className="p-3">
                           <div>
                             <p className="font-medium">
-                              {worksheet.employee.firstName} {worksheet.employee.lastName}
+                              {worksheet?.employee?.firstName} {worksheet?.employee?.lastName}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {worksheet.employee.employeeId}
+                              {worksheet?.employee?.employeeId}
                             </p>
                           </div>
                         </td>
                         <td className="p-3">
                           <div>
-                            <p className="font-medium">{worksheet.employee.department}</p>
-                            <p className="text-sm text-gray-500">{worksheet.employee.role}</p>
+                            <p className="font-medium">{worksheet?.employee?.department}</p>
+                            <p className="text-sm text-gray-500">{worksheet?.employee?.role}</p>
                           </div>
                         </td>
                         <td className="p-3">
-                          {new Date(worksheet.date).toLocaleDateString()}
+                          {worksheet?.date ? new Date(worksheet.date).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="p-3">
                           <div className="text-sm">
-                            <p>Planned: {worksheet.totalTasksPlanned}</p>
-                            <p>Completed: {worksheet.totalTasksCompleted}</p>
+                            <p>Planned: {worksheet?.totalTasksPlanned || 0}</p>
+                            <p>Completed: {worksheet?.totalTasksCompleted || 0}</p>
                           </div>
                         </td>
                         <td className="p-3">
-                          <span className={`font-bold ${getProductivityColor(worksheet.productivityScore)}`}>
-                            {worksheet.productivityScore}%
+                          <span className={`font-bold ${getProductivityColor(worksheet?.productivityScore || 0)}`}>
+                            {worksheet?.productivityScore || 0}%
                           </span>
                         </td>
                         <td className="p-3">
-                          {getStatusBadge(worksheet.approvalStatus, worksheet.isSubmitted)}
+                          {getStatusBadge(worksheet?.approvalStatus, worksheet?.isSubmitted)}
                         </td>
                         <td className="p-3">
                           <Button
@@ -890,7 +873,7 @@ const WorksheetDetailsModal = ({ worksheet, onClose, onAction, userRole }) => {
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-4">Daily Tasks</h3>
             <div className="space-y-2">
-              {worksheet.timeSlots.map((slot, index) => (
+              {worksheet?.timeSlots?.map((slot, index) => (
                 <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
                   <div className="w-20 text-sm font-medium">
                     {slot.hour}:00

@@ -44,22 +44,44 @@ const AdminAttendancePage = () => {
     try {
       setLoading(true);
       
+      // Get today's attendance data
       const response = await api.get('/attendance/all', {
         params: {
           startDate: selectedDate,
           endDate: selectedDate,
           department: selectedDepartment !== 'all' ? selectedDepartment : undefined,
-          limit: 100 // Increase limit to get more records
+          limit: 1000 // Increase limit to get all records
         }
       });
-      if (response.data.success) {
-        setAttendanceData(response.data.data);
-        calculateStats(response.data.data);
+
+      if (response.data.success && response.data.data) {
+        console.log('Fetched attendance data:', response.data.data);
+        const attendanceRecords = Array.isArray(response.data.data) ? response.data.data : 
+                                  (response.data.data.attendanceRecords || []);
+        setAttendanceData(attendanceRecords);
+        calculateStats(attendanceRecords);
       } else {
+        console.log('No attendance data found');
         setAttendanceData([]);
+        calculateStats([]);
       }
+
+      // Also get all employees count for accurate stats
+      const employeesResponse = await api.get('/users/employees');
+      if (employeesResponse.data.success && employeesResponse.data.data && employeesResponse.data.data.employees) {
+        const totalEmployeesCount = employeesResponse.data.data.employees.length;
+        setStats(prevStats => ({
+          ...prevStats,
+          totalEmployees: totalEmployeesCount
+        }));
+      } else {
+        console.log('No employees data found or invalid response structure');
+      }
+
     } catch (error) {
+      console.error('Error fetching attendance data:', error);
       setAttendanceData([]);
+      calculateStats([]);
     } finally {
       setLoading(false);
     }
@@ -76,61 +98,60 @@ const AdminAttendancePage = () => {
     }
   };
 
-  const calculateStats = (data) => {
+  const calculateStats = (attendanceData) => {
     const stats = {
       totalEmployees: 0,
-      present: 0,
-      absent: 0,
-      late: 0,
+      presentToday: 0,
+      absentToday: 0,
+      lateToday: 0,
       avgWorkingHours: 0
     };
 
-    if (!data || data.length === 0) {
+    if (!attendanceData || attendanceData.length === 0) {
       setStats(stats);
       return;
     }
 
-    // Group by employee
-    const employeeAttendance = {};
-    data.forEach(record => {
-      const employee = record.employee || record.user;
-      if (employee && employee._id) {
-        const empId = employee._id;
-        if (!employeeAttendance[empId]) {
-          employeeAttendance[empId] = {
-            employee: employee,
-            records: []
-          };
-        }
-        employeeAttendance[empId].records.push(record);
-      }
-    });
-
-    const employees = Object.values(employeeAttendance);
-    stats.totalEmployees = employees.length;
-
     let totalWorkingHours = 0;
     let employeesWithHours = 0;
+    const processedEmployees = new Set();
 
-    employees.forEach(emp => {
-      // Get latest record for this employee
-      const latestRecord = emp.records.sort((a, b) => 
-        new Date(b.date) - new Date(a.date)
-      )[0];
+    // Process actual attendance records
+    attendanceData.forEach(record => {
+      const employee = record.employee || record.user;
+      if (!employee || !employee._id) return;
 
-      if (latestRecord) {
-        if (latestRecord.status === 'Present') {
-          stats.present++;
-        } else if (latestRecord.status === 'Absent') {
-          stats.absent++;
-        } else if (latestRecord.status === 'Late') {
-          stats.late++;
-        }
+      const empId = employee._id;
+      if (processedEmployees.has(empId)) return; // Avoid double counting
+      
+      processedEmployees.add(empId);
 
-        // Calculate working hours if available
-        if (latestRecord.workingHours && latestRecord.workingHours > 0) {
-          totalWorkingHours += latestRecord.workingHours;
-          employeesWithHours++;
+      // Check if record is from the selected date
+      const recordDate = new Date(record.date).toDateString();
+      const selectedDateObj = new Date(selectedDate).toDateString();
+      
+      if (recordDate === selectedDateObj) {
+        if (record.clockIn) {
+          // Employee has clocked in
+          const clockInTime = new Date(record.clockIn);
+          const clockInHour = clockInTime.getHours();
+          const clockInMinute = clockInTime.getMinutes();
+          
+          // Check if late (after 9:00 AM)
+          if (clockInHour > 9 || (clockInHour === 9 && clockInMinute > 0)) {
+            stats.lateToday++;
+          } else {
+            stats.presentToday++;
+          }
+
+          // Calculate working hours if available
+          if (record.totalWorkTime && record.totalWorkTime > 0) {
+            totalWorkingHours += record.totalWorkTime / 60; // Convert minutes to hours
+            employeesWithHours++;
+          }
+        } else {
+          // No clock in time means absent
+          stats.absentToday++;
         }
       }
     });

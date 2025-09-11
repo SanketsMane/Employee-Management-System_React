@@ -24,7 +24,7 @@ const bugReportSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['open', 'in-progress', 'resolved', 'closed', 'rejected'],
+    enum: ['open', 'in-progress', 'resolved', 'closed', 'rejected', 'needs-more-info'],
     default: 'open'
   },
   reportedBy: {
@@ -54,6 +54,35 @@ const bugReportSchema = new mongoose.Schema({
     type: String,
     maxlength: 1000
   },
+  workNotes: {
+    type: String,
+    maxlength: 1000
+  },
+  estimatedTimeHours: {
+    type: Number,
+    min: 0,
+    max: 1000
+  },
+  workLog: [{
+    action: {
+      type: String,
+      enum: ['assigned', 'in-progress', 'resolved', 'needs-more-info', 'update', 'comment'],
+      required: true
+    },
+    notes: {
+      type: String,
+      maxlength: 500
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   resolution: {
     type: String,
     maxlength: 1000

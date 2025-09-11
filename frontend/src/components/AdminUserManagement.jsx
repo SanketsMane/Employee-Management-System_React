@@ -50,6 +50,7 @@ const AdminUserManagement = () => {
   // Role management
   const defaultRoles = ['Admin', 'HR', 'Manager', 'Employee'];
   const [customRoles, setCustomRoles] = useState([]);
+  const [roleObjects, setRoleObjects] = useState([]); // Store full role objects for ID access
   const [newRole, setNewRole] = useState('');
   const allRoles = [...defaultRoles, ...customRoles];
 
@@ -98,11 +99,24 @@ const AdminUserManagement = () => {
 
   const fetchCustomRoles = async () => {
     try {
-      const response = await api.get('/admin/custom-roles');
-      setCustomRoles(response.data.customRoles || []);
+      const response = await api.get('/system/config/roles');
+      if (response.data && response.data.success) {
+        const systemRoles = response.data.data.items || [];
+        // Store full objects for ID access
+        setRoleObjects(systemRoles);
+        // Filter out default roles to get only custom ones
+        const additionalRoles = systemRoles
+          .filter(roleObj => !defaultRoles.includes(roleObj.name))
+          .map(roleObj => roleObj.name); // Extract just the name for backwards compatibility
+        setCustomRoles(additionalRoles);
+      } else {
+        setCustomRoles([]);
+        setRoleObjects([]);
+      }
     } catch (error) {
       console.error('Error fetching custom roles:', error);
-      // If endpoint doesn't exist, ignore error
+      setCustomRoles([]);
+      setRoleObjects([]);
     }
   };
 
@@ -278,40 +292,37 @@ const AdminUserManagement = () => {
     }
 
     try {
-      // Try to add custom role via API
-      try {
-        await api.post('/admin/custom-roles', { roleName: newRole.trim() });
-        setCustomRoles([...customRoles, newRole.trim()]);
-        toast.success('Custom role added successfully');
-      } catch (apiError) {
-        // If API doesn't exist, just add locally
-        setCustomRoles([...customRoles, newRole.trim()]);
-        toast.success('Custom role added locally');
-      }
+      // Add role via system config API
+      await api.post('/system/config/roles', { 
+        name: newRole.trim()
+      });
+      await fetchCustomRoles(); // Refresh the list
       setNewRole('');
+      toast.success('Role added successfully');
     } catch (error) {
       console.error('Error adding custom role:', error);
       toast.error('Failed to add custom role');
     }
   };
 
-  const removeCustomRole = async (role) => {
+    const removeCustomRole = async (role) => {
     if (window.confirm(`Are you sure you want to delete the role "${role}"? Users with this role will need to be reassigned.`)) {
       try {
-        // Try to remove via API
-        try {
-          await api.delete(`/admin/custom-roles/${role}`);
-        } catch (apiError) {
-          // If API doesn't exist, just remove locally
-          console.log('API endpoint not available, removing locally');
+        // Find the role object to get its ID
+        const roleObject = roleObjects.find(r => r.name === role);
+        if (!roleObject) {
+          toast.error('Role not found');
+          return;
         }
+
+        // Delete via system config API using the role ID
+        await api.delete(`/system/config/roles/${roleObject._id}`);
         
-        setCustomRoles(customRoles.filter(r => r !== role));
-        toast.success('Custom role removed successfully');
-        fetchUsers(); // Refresh users in case any had this role
+        await fetchCustomRoles(); // Refresh the list
+        toast.success('Role removed successfully');
       } catch (error) {
         console.error('Error removing custom role:', error);
-        toast.error('Failed to remove custom role');
+        toast.error(error.response?.data?.message || 'Failed to remove custom role');
       }
     }
   };

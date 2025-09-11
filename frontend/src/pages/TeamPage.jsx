@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, UserPlus, Edit, Trash2, Eye, Search, Filter } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -9,6 +10,7 @@ import api from "../lib/api";
 
 const TeamPage = () => {
   const { user, isAdmin, isHR, isManager } = useAuth();
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,11 +28,9 @@ const TeamPage = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      console.log('Fetching team members...');
       // Use the new team-members endpoint that works for all authenticated users
       const response = await api.get('/users/team-members');
       if (response.data.success) {
-        console.log('Team members fetched:', response.data.data.employees.length);
         setEmployees(response.data.data.employees);
       } else {
         console.error('Failed to fetch team members:', response.data.message);
@@ -44,20 +44,21 @@ const TeamPage = () => {
     }
   };
 
+  const handleAddEmployee = () => {
+    navigate('/admin/users');
+  };
+
   const handleViewEmployee = (employee) => {
-    console.log('Viewing employee:', employee.firstName, employee.lastName);
     setSelectedEmployee(employee);
     setShowViewModal(true);
   };
 
   const handleEditEmployee = (employee) => {
-    console.log('Editing employee:', employee.firstName, employee.lastName);
     setSelectedEmployee(employee);
     setShowEditModal(true);
   };
 
   const handleDeleteEmployee = (employee) => {
-    console.log('Delete confirmation for:', employee.firstName, employee.lastName);
     setSelectedEmployee(employee);
     setShowDeleteConfirm(true);
   };
@@ -66,7 +67,6 @@ const TeamPage = () => {
     if (!selectedEmployee) return;
     
     try {
-      console.log('Deleting employee:', selectedEmployee._id);
       const response = await api.delete(`/admin/users/${selectedEmployee._id}`);
       
       if (response.data.success) {
@@ -87,7 +87,6 @@ const TeamPage = () => {
     if (!selectedEmployee) return;
     
     try {
-      console.log('Updating employee:', selectedEmployee._id, updatedData);
       const response = await api.put(`/admin/users/${selectedEmployee._id}`, updatedData);
       
       if (response.data.success) {
@@ -138,7 +137,7 @@ const TeamPage = () => {
           </p>
         </div>
         {(isHR || isAdmin) && (
-          <Button>
+          <Button onClick={handleAddEmployee}>
             <UserPlus className="h-4 w-4 mr-2" />
             Add Employee
           </Button>

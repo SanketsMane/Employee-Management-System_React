@@ -179,6 +179,161 @@ const getUserBugReports = async (req, res) => {
   }
 };
 
+// Get bugs assigned to current user
+const getAssignedBugReports = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status } = req.query;
+    
+    const filter = { assignedTo: req.user._id };
+    if (status) filter.status = status;
+
+    const skip = (page - 1) * limit;
+
+    const bugReports = await BugReport.find(filter)
+      .populate('reportedBy', 'firstName lastName email role')
+      .populate('resolvedBy', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await BugReport.countDocuments(filter);
+
+    // Get status summary for assigned bugs
+    const statusSummary = await BugReport.aggregate([
+      { $match: { assignedTo: req.user._id } },
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        bugReports,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+          hasNext: page * limit < total,
+          hasPrev: page > 1
+        },
+        summary: {
+          status: statusSummary
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching assigned bug reports:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch assigned bug reports',
+      error: error.message
+    });
+  }
+};
+
+// Update assigned bug report (for employees working on assigned bugs)
+const updateAssignedBugReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, resolution, workNotes, estimatedTimeHours } = req.body;
+
+    const bugReport = await BugReport.findById(id)
+      .populate('reportedBy', 'firstName lastName email')
+      .populate('assignedTo', 'firstName lastName email');
+
+    if (!bugReport) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bug report not found'
+      });
+    }
+
+    // Check if user is assigned to this bug report
+    if (bugReport.assignedTo?._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only update bugs assigned to you'
+      });
+    }
+
+    // Validate status transitions
+    const allowedStatuses = ['in-progress', 'resolved', 'needs-more-info'];
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Allowed statuses: in-progress, resolved, needs-more-info'
+      });
+    }
+
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (resolution) updateData.resolution = resolution;
+    if (workNotes) updateData.workNotes = workNotes;
+    if (estimatedTimeHours) updateData.estimatedTimeHours = estimatedTimeHours;
+    
+    // Add work log entry
+    if (!bugReport.workLog) bugReport.workLog = [];
+    bugReport.workLog.push({
+      action: status || 'update',
+      notes: workNotes || resolution || 'Status updated',
+      updatedBy: req.user._id,
+      timestamp: new Date()
+    });
+
+    if (status === 'resolved') {
+      updateData.resolvedAt = new Date();
+      updateData.resolvedBy = req.user._id;
+    }
+
+    const updatedBugReport = await BugReport.findByIdAndUpdate(
+      id,
+      { ...updateData, workLog: bugReport.workLog },
+      { new: true }
+    ).populate('reportedBy', 'firstName lastName email')
+     .populate('assignedTo', 'firstName lastName email')
+     .populate('resolvedBy', 'firstName lastName email');
+
+    // Notify the bug reporter and admins about the update
+    const notification = {
+      _id: new Date().getTime(),
+      type: 'bug_update',
+      title: 'Bug Report Updated',
+      message: `Bug "${bugReport.title}" has been updated by ${req.user.firstName} ${req.user.lastName}`,
+      data: {
+        bugReportId: bugReport._id,
+        status: status,
+        updatedBy: `${req.user.firstName} ${req.user.lastName}`
+      },
+      createdAt: new Date(),
+      read: false
+    };
+
+    // Send notification to bug reporter
+    webSocketService.sendNotificationToUser(
+      bugReport.reportedBy._id.toString(), 
+      notification
+    );
+
+    // Send notification to all admins
+    const admins = await User.find({ role: 'Admin' });
+    admins.forEach(admin => {
+      webSocketService.sendNotificationToUser(admin._id.toString(), notification);
+    });
+
+    res.json({
+      success: true,
+      message: 'Bug report updated successfully',
+      data: updatedBugReport
+    });
+  } catch (error) {
+    console.error('Error updating assigned bug report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update bug report',
+      error: error.message
+    });
+  }
+};
+
 // Update bug report status (Admin only)
 const updateBugReportStatus = async (req, res) => {
   try {
@@ -392,7 +547,9 @@ module.exports = {
   createBugReport,
   getAllBugReports,
   getUserBugReports,
+  getAssignedBugReports,
   updateBugReportStatus,
+  updateAssignedBugReport,
   getBugReportById,
   uploadScreenshot,
   deleteBugReport

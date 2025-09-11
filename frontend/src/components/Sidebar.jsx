@@ -17,7 +17,8 @@ import {
   CheckCircle,
   UserCheck,
   ClipboardList,
-  Bug
+  Bug,
+  Megaphone
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -55,6 +56,12 @@ const Sidebar = () => {
       title: 'Leaves',
       href: '/leaves',
       icon: Calendar,
+      roles: ['all']
+    },
+    {
+      title: 'Announcements',
+      href: '/announcements',
+      icon: Megaphone,
       roles: ['all']
     },
     {
@@ -113,10 +120,22 @@ const Sidebar = () => {
       roles: ['all']
     },
     {
+      title: 'Assigned Bugs',
+      href: '/assigned-bugs',
+      icon: Bug,
+      roles: ['all']
+    },
+    {
       title: 'Manage Bug Reports',
       href: '/admin/bug-reports',
       icon: Bug,
       roles: ['Admin']
+    },
+    {
+      title: 'Manage Announcements',
+      href: '/admin/announcements',
+      icon: Megaphone,
+      roles: ['Admin', 'HR']
     },
     {
       title: 'Company Settings',
