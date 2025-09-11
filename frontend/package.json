@@ -6,11 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:prod": "NODE_ENV=production vite build --mode production",
+    "build:preview": "npm run build && npm run preview",
+    "build:analyze": "npm run build && npx vite-bundle-analyzer dist",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:prod": "vite build --mode production",
     "deploy:hostinger": "./deploy-hostinger.sh",
-    "test:build": "npm run build && npm run preview"
+    "test:build": "npm run build && npm run preview",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

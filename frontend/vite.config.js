@@ -14,6 +14,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -22,8 +23,12 @@ export default defineConfig({
           ui: ['framer-motion', 'lucide-react']
         }
       }
-    }
+    },
+    // Ensure index.html is always generated
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 1000
   },
+  base: './', // Use relative paths for better compatibility
   server: {
     host: true,
     port: 5173
