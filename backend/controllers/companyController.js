@@ -8,6 +8,7 @@ const CompanySettings = require('../models/CompanySettings');
 exports.getCompanyInfo = async (req, res) => {
   try {
     console.log('🏢 Getting company info...');
+    console.log('👤 User requesting company info:', req.user ? `${req.user.firstName} ${req.user.lastName} (${req.user.role})` : 'No user');
     
     // Get company info from database (or create default if none exists)
     let company = await Company.findOne({ isActive: true });
