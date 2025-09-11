@@ -125,9 +125,15 @@ const Sidebar = () => {
       roles: ['Admin']
     },
     {
+      title: 'System Config',
+      href: '/system-config',
+      icon: Settings,
+      roles: ['Admin']
+    },
+    {
       title: 'Settings',
       href: '/settings',
-      icon: Settings,
+      icon: User,
       roles: ['all']
     }
   ];

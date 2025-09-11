@@ -132,15 +132,30 @@ const AdminWorksheetPage = () => {
       const response = await api.get('/admin/users/employees');
       if (response.data.success) {
         setEmployees(response.data.data.users);
-        
-        // Extract unique departments and roles
-        const departments = [...new Set(response.data.data.users.map(emp => emp.department))];
-        const roles = [...new Set(response.data.data.users.map(emp => emp.role))];
-        
-        setFilterOptions({
-          departments: departments.filter(Boolean),
-          roles: roles.filter(Boolean)
-        });
+      }
+
+      // Fetch system configurations for departments and roles
+      try {
+        const configResponse = await api.get('/system/config');
+        if (configResponse.data.success) {
+          const configs = configResponse.data.data;
+          setFilterOptions({
+            departments: configs.departments?.map(item => item.name) || [],
+            roles: configs.roles?.map(item => item.name) || []
+          });
+        }
+      } catch (configError) {
+        console.error('❌ Error fetching system config, falling back to user data:', configError);
+        // Fallback to extracting from existing users if system config fails
+        if (response.data.success) {
+          const departments = [...new Set(response.data.data.users.map(emp => emp.department))];
+          const roles = [...new Set(response.data.data.users.map(emp => emp.role))];
+          
+          setFilterOptions({
+            departments: departments.filter(Boolean),
+            roles: roles.filter(Boolean)
+          });
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching employees:', error);

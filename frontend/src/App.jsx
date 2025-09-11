@@ -30,6 +30,7 @@ import EmployeeLeaveManagement from './pages/EmployeeLeaveManagement';
 import BugReportsPage from './pages/BugReportsPage';
 import AdminBugReportsPage from './pages/AdminBugReportsPage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
+import SystemConfigPage from './pages/SystemConfigPage';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 
@@ -318,6 +319,16 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <CompanySettingsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/system-config" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SystemConfigPage />
               </Layout>
             </ProtectedRoute>
           } 

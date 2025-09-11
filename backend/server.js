@@ -30,6 +30,7 @@ const testSmsRoutes = require('./routes/testSmsRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const testRoutes = require('./routes/testRoutes');
 const bugReportRoutes = require('./routes/bugReportRoutes');
+const systemConfigRoutes = require('./routes/systemConfigRoutes');
 
 // Connect to database
 connectDB();
@@ -178,6 +179,7 @@ app.use('/api/test', testSmsRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/bug-reports', bugReportRoutes);
+app.use('/api/system/config', systemConfigRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
