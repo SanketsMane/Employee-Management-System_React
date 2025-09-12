@@ -204,14 +204,12 @@ exports.register = async (req, res, next) => {
         subject: `Welcome to FormoEMS - Account Created Successfully! 🎉`,
         html: welcomeHtml
       });
-      console.log(`✅ Welcome email sent to new user: ${user.firstName} ${user.lastName} (${user.email})`);
     } catch (emailError) {
-      console.log('Welcome email sending failed:', emailError.message);
+      // Welcome email sending failed, but continue with registration
     }
 
     sendTokenResponse(user, 201, res);
   } catch (error) {
-    console.error('Registration error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during registration',
@@ -311,7 +309,6 @@ exports.login = async (req, res, next) => {
 
     sendTokenResponse(user, 200, res);
   } catch (error) {
-    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during login',
@@ -325,15 +322,10 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
   try {
-    console.log('📋 GET /auth/me request received');
-    console.log('User ID:', req.user?.id);
-    
     const user = await User.findById(req.user.id)
       .populate('manager', 'firstName lastName email')
       .populate('teamLead', 'firstName lastName email')
       .select('-password');
-
-    console.log('👤 User found:', user ? `${user.firstName} ${user.lastName}` : 'Not found');
 
     res.status(200).json({
       success: true,

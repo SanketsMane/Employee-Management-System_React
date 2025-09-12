@@ -129,8 +129,7 @@ const companySettingsSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for fast company lookup
-companySettingsSchema.index({ companyName: 1 });
+// Index for performance (companyName index is automatically created by unique: true)
 companySettingsSchema.index({ isActive: 1 });
 
 // Method to check if a time is within work hours

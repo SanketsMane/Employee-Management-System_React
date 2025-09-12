@@ -80,8 +80,8 @@ const workSheetSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
-workSheetSchema.index({ employee: 1, date: -1 });
+// Index for efficient queries and uniqueness constraint
+workSheetSchema.index({ employee: 1, date: -1 }, { unique: true });
 workSheetSchema.index({ date: -1 });
 
 // Calculate productivity score before saving
@@ -98,8 +98,5 @@ workSheetSchema.pre('save', function(next) {
   
   next();
 });
-
-// Ensure one worksheet per employee per day
-workSheetSchema.index({ employee: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model('WorkSheet', workSheetSchema);
