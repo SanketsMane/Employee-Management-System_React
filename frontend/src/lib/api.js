@@ -1,7 +1,21 @@
 import axios from 'axios';
 
-// Force localhost for local development
-const API_BASE_URL = 'http://localhost:8000/api';
+// Dynamic API base URL for different environments
+const getApiBaseUrl = () => {
+  // Check if we're in development
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8000/api';
+  }
+  
+  // For production, use the same domain with /api path
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  const port = window.location.port === '80' || window.location.port === '443' || !window.location.port ? '' : ':8000';
+  
+  return `${protocol}//${hostname}${port}/api`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,

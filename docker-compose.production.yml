@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  backend:
+    image: sanketsmane/ems-backend:v2.0-aws
+    container_name: ems-backend-prod
+    ports:
+      - "8000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      # MongoDB - Use environment variable for security
+      - MONGODB_URI=${MONGODB_URI}
+      # JWT - Use strong production secrets
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE=7d
+      # Email Configuration
+      - EMAIL_ENABLED=true
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      # Frontend URL - Will be set to EC2 instance URL
+      - FRONTEND_URL=${FRONTEND_URL}
+      # Cloudinary
+      - CLOUDINARY_URL=${CLOUDINARY_URL}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      # Security
+      - RATE_LIMIT_WINDOW=15
+      - RATE_LIMIT_MAX=100
+      - AWS_REGION=us-east-1
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    networks:
+      - ems-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: sanketsmane/ems-frontend:v2.0-aws
+    container_name: ems-frontend-prod
+    ports:
+      - "80:80"
+      - "443:443"  # For HTTPS
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - ems-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  backend_uploads:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  ems-network:
+    driver: bridge

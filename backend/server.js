@@ -115,30 +115,33 @@ const corsOptions = {
       'https://ems.formonex.in',
       'https://formonex.in',
       'http://ems.formonex.in',
-      'http://formonex.in',
-      // AWS EC2 domains
-      'http://43.205.116.48:8000',
-      'http://ec2-43-205-116-48.ap-south-1.compute.amazonaws.com:8000',
-      'https://ec2-43-205-116-48.ap-south-1.compute.amazonaws.com:8000',
-      // Add any additional domains
-      'https://www.your-hostinger-domain.com'
+      'http://formonex.in'
     ];
     
-    // In production, be more strict with CORS
+    // In production, be more flexible for AWS deployment
     if (process.env.NODE_ENV === 'production') {
-      // For local development with Docker (production build), allow localhost
-      const isLocalDevelopment = origin && origin.includes('localhost');
-      const productionOrigins = allowedOrigins.filter(url => !url.includes('localhost') && !url.includes('127.0.0.1'));
+      // Allow localhost for development
+      const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
       
-      if (isLocalDevelopment || productionOrigins.includes(origin)) {
+      // Allow any AWS EC2 domain pattern
+      const isAwsEc2 = origin && (
+        origin.includes('.compute.amazonaws.com') ||
+        origin.includes('.aws.') ||
+        /^https?:\/\/\d+\.\d+\.\d+\.\d+/.test(origin) // Allow any IP address
+      );
+      
+      // Allow configured production domains
+      const isAllowedDomain = allowedOrigins.includes(origin);
+      
+      if (isLocalhost || isAwsEc2 || isAllowedDomain) {
         callback(null, true);
       } else {
         console.log('❌ CORS blocked origin:', origin);
         callback(new Error('Not allowed by CORS'));
       }
     } else {
-      // Development - allow all configured origins
-      if (allowedOrigins.includes(origin)) {
+      // Development - allow all configured origins and localhost
+      if (allowedOrigins.includes(origin) || origin.includes('localhost') || origin.includes('127.0.0.1')) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
