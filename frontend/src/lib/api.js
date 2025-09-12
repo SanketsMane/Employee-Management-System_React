@@ -1,11 +1,7 @@
 import axios from 'axios';
 
-// Use AWS EC2 backend URL in production
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-  (import.meta.env.PROD 
-    ? 'http://43.205.116.48:8000/api'  // AWS EC2 Public IP
-    : 'http://localhost:8000/api'      // Local development
-  );
+// Force localhost for local development
+const API_BASE_URL = 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

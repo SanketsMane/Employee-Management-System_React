@@ -1,3 +1,6 @@
+# Docker Compose for development without MongoDB
+# Use this if you have MongoDB installed locally or want to use MongoDB Atlas
+
 services:
   # Frontend Service
   frontend:
@@ -5,12 +8,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "3000:80"
     environment:
-      - VITE_API_URL=http://backend:5000/api
-      - VITE_WEBSOCKET_URL=ws://backend:5000
-    depends_on:
-      - backend
+      - VITE_API_URL=http://localhost:8000/api
+      - VITE_WEBSOCKET_URL=ws://localhost:8000
     networks:
       - ems-network
 

@@ -13,6 +13,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Set environment variables for build
+ENV VITE_API_BASE_URL=http://localhost:8000/api
+ENV VITE_WEBSOCKET_URL=ws://localhost:8000
+
 # Build the application
 RUN npm run build
 

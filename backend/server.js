@@ -43,7 +43,23 @@ webSocketService.initialize(server);
 app.set('trust proxy', 1);
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'", "http:", "https:", "data:", "blob:", "'unsafe-inline'"],
+      connectSrc: ["'self'", "*", "ws:", "wss:", "http:", "https:"], // Allow WebSocket protocols explicitly
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      imgSrc: ["'self'", "data:", "blob:", "https:", "*"],
+      fontSrc: ["'self'", "data:", "https:", "*"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'", "data:", "blob:", "*"],
+      frameSrc: ["'self'", "*"],
+      workerSrc: ["'self'", "blob:"],
+      upgradeInsecureRequests: []
+    },
+  },
+}));
 
 // Compression middleware
 app.use(compression());
@@ -89,6 +105,8 @@ const corsOptions = {
     
     const allowedOrigins = [
       process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost',        // Frontend running on port 80
+      'http://localhost:80',     // Explicit port 80
       'http://localhost:3000',
       'http://localhost:5000',
       'http://localhost:5174',
@@ -108,9 +126,11 @@ const corsOptions = {
     
     // In production, be more strict with CORS
     if (process.env.NODE_ENV === 'production') {
-      // Remove localhost origins in production
-      const productionOrigins = allowedOrigins.filter(url => !url.includes('localhost'));
-      if (productionOrigins.includes(origin)) {
+      // For local development with Docker (production build), allow localhost
+      const isLocalDevelopment = origin && origin.includes('localhost');
+      const productionOrigins = allowedOrigins.filter(url => !url.includes('localhost') && !url.includes('127.0.0.1'));
+      
+      if (isLocalDevelopment || productionOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.log('❌ CORS blocked origin:', origin);

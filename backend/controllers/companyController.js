@@ -166,11 +166,6 @@ exports.getCompanySettings = async (req, res) => {
       query.companyName = companyName;
     }
     
-    // If user is not admin, get their company settings only
-    if (req.user.role !== 'Admin') {
-      query.companyName = req.user.company || 'Default Company';
-    }
-    
     const settings = await CompanySettings.findOne(query)
       .populate('createdBy', 'firstName lastName email')
       .populate('updatedBy', 'firstName lastName email');

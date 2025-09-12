@@ -66,21 +66,6 @@ const LoginModal = ({ isOpen, onClose }) => {
     setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee' });
   };
 
-  const demoCredentials = [
-    { role: 'Admin', email: 'admin@formonex.com', password: 'admin123456' },
-    { role: 'HR', email: 'hr@formonex.com', password: 'hr123456' },
-    { role: 'Manager', email: 'manager@formonex.com', password: 'manager123456' },
-    { role: 'Employee', email: 'employee@formonex.com', password: 'employee123456' }
-  ];
-
-  const fillDemoCredentials = (credentials) => {
-    setFormData(prev => ({
-      ...prev,
-      email: credentials.email,
-      password: credentials.password
-    }));
-  };
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -125,26 +110,6 @@ const LoginModal = ({ isOpen, onClose }) => {
                   <X className="h-6 w-6" />
                 </button>
               </div>
-
-              {/* Demo Credentials (only show in login mode) */}
-              {isLoginMode && (
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Quick Demo Access:
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {demoCredentials.map((cred, index) => (
-                      <button
-                        key={index}
-                        onClick={() => fillDemoCredentials(cred)}
-                        className="text-xs px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 transition-colors"
-                      >
-                        {cred.role}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
