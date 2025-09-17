@@ -15,8 +15,8 @@ RUN npm ci
 COPY . .
 
 # Build arguments for environment variables (Updated for HTTPS production)
-ARG VITE_API_BASE_URL=http://65.0.94.0:8000/api
-ARG VITE_WEBSOCKET_URL=ws://65.0.94.0:8000
+ARG VITE_API_BASE_URL=https://65.0.94.0:8000/api
+ARG VITE_WEBSOCKET_URL=wss://65.0.94.0:8000
 ARG VITE_APP_NAME=Formonex EMS - Employee Management System
 ARG VITE_APP_VERSION=1.0.0
 ARG VITE_ENVIRONMENT=production

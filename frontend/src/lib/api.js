@@ -9,18 +9,19 @@ const getApiBaseUrl = () => {
   
   // Production configuration for Formonex domain (HTTPS-ready)
   if (window.location.hostname === 'ems.formonex.in') {
-    // Use environment variable for API URL or fallback to production setup
-    // For HTTPS frontend, use HTTP API endpoint (handled by reverse proxy/load balancer)
-    return import.meta.env.VITE_API_BASE_URL || 'http://65.0.94.0:8000/api';
+    // For HTTPS frontend, we need HTTPS API to avoid mixed content
+    // Use environment variable or fallback to HTTPS production endpoint
+    const httpsApiUrl = import.meta.env.VITE_API_BASE_URL?.replace('http://', 'https://') || 'https://65.0.94.0:8000/api';
+    return httpsApiUrl;
   }
   
-  // For other production environments, use the same protocol as the page
+  // For other production environments, match the protocol of the page
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
   
-  // If page is served over HTTPS, try HTTPS API first, fallback to HTTP if needed
+  // If page is served over HTTPS, use HTTPS for API
   if (protocol === 'https:') {
-    return import.meta.env.VITE_API_BASE_URL || `https://${hostname}:8000/api`;
+    return import.meta.env.VITE_API_BASE_URL?.replace('http://', 'https://') || `https://${hostname}:8000/api`;
   }
   
   // For HTTP pages, use HTTP API
