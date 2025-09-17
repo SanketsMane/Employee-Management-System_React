@@ -28,6 +28,7 @@ const taskSheetRoutes = require('./routes/taskSheetRoutes');
 const adminUserRoutes = require('./routes/adminUserRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const bugReportRoutes = require('./routes/bugReportRoutes');
+const overtimeRoutes = require('./routes/overtimeRoutes');
 const systemConfigRoutes = require('./routes/systemConfigRoutes');
 
 // Connect to database
@@ -197,6 +198,7 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/task-sheets', taskSheetRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/company', companyRoutes);
+app.use('/api/overtime', overtimeRoutes);
 app.use('/api/bug-reports', bugReportRoutes);
 app.use('/api/system/config', systemConfigRoutes);
 app.use('/api/announcements', require('./routes/announcementRoutes'));

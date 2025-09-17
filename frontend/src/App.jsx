@@ -12,6 +12,8 @@ import LandingPage from './pages/LandingPageNew';
 import AttendancePageNew from './pages/AttendancePageNew';
 import WorkSheetPage from './pages/WorkSheetPage';
 import LeavesPage from './pages/LeavesPage';
+import OvertimePage from './pages/OvertimePage';
+import AdminOvertimePage from './pages/AdminOvertimePage';
 import ProfilePage from './pages/ProfilePage';
 import TeamPage from './pages/TeamPage';
 import AnalyticsPage from './pages/AnalyticsPage';
@@ -187,6 +189,20 @@ function AppContent() {
                   AdminComponent={AdminLeaveManagement}
                   RegularComponent={EmployeeLeaveManagement}
                   requiresAdminAccess={true}
+                />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/overtime" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <RoleBasedPageWrapper 
+                  AdminComponent={AdminOvertimePage}
+                  RegularComponent={OvertimePage}
+                  requiresAdminAccess={false}
                 />
               </Layout>
             </ProtectedRoute>

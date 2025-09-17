@@ -17,6 +17,7 @@ import {
   CheckCircle,
   UserCheck,
   ClipboardList,
+  Timer,
   Bug,
   Megaphone
 } from 'lucide-react';
@@ -56,6 +57,12 @@ const Sidebar = () => {
       title: 'Leaves',
       href: '/leaves',
       icon: Calendar,
+      roles: ['all']
+    },
+    {
+      title: 'Overtime',
+      href: '/overtime',
+      icon: Timer,
       roles: ['all']
     },
     {

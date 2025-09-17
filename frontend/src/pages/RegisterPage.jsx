@@ -68,8 +68,8 @@ const RegisterPage = () => {
     setError('');
 
     // Basic validation
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.role || !formData.position) {
-      setError('Please fill in all required fields');
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.role || !formData.position || !formData.department) {
+      setError('Please fill in all required fields (First Name, Last Name, Email, Password, Role, Position, and Department)');
       return;
     }
 
@@ -244,13 +244,13 @@ const RegisterPage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="department" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Department
+                Department *
               </Label>
               <div className="relative">
                 <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
                 <Select value={formData.department} onValueChange={(value) => handleSelectChange('department', value)}>
                   <SelectTrigger className="pl-10 h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500">
-                    <SelectValue placeholder="Select department (optional)" />
+                    <SelectValue placeholder="Select department (required)" />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (

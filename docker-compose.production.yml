@@ -2,8 +2,12 @@ version: '3.8'
 
 services:
   backend:
-    image: sanketsmane/ems-backend:v2.0-aws
+    image: sanketsmane/ems-backend:${VERSION:-latest}
     container_name: ems-backend-prod
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
     ports:
       - "8000:5000"
     environment:
@@ -13,11 +17,11 @@ services:
       - MONGODB_URI=${MONGODB_URI}
       # JWT - Use strong production secrets
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRE=7d
+      - JWT_EXPIRE=${JWT_EXPIRE:-7d}
       # Email Configuration
-      - EMAIL_ENABLED=true
-      - EMAIL_HOST=smtp.gmail.com
-      - EMAIL_PORT=587
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-true}
+      - EMAIL_HOST=${EMAIL_HOST:-smtp.gmail.com}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
       - EMAIL_FROM=${EMAIL_FROM}
@@ -29,25 +33,50 @@ services:
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
       # Security
-      - RATE_LIMIT_WINDOW=15
-      - RATE_LIMIT_MAX=100
-      - AWS_REGION=us-east-1
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-15}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      # Resource limits
+      - NODE_OPTIONS=--max-old-space-size=1024
     volumes:
       - backend_uploads:/app/uploads
       - backend_logs:/app/logs
     networks:
       - ems-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
-    image: sanketsmane/ems-frontend:v2.0-aws
+    image: sanketsmane/ems-frontend:${VERSION:-latest}
     container_name: ems-frontend-prod
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000/api}
+        - VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL:-ws://localhost:8000}
+        - VITE_CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+        - VITE_CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+        - VITE_APP_NAME=${VITE_APP_NAME:-Employee Management System}
     ports:
       - "80:80"
       - "443:443"  # For HTTPS
@@ -57,18 +86,42 @@ services:
     networks:
       - ems-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
 volumes:
   backend_uploads:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${UPLOADS_PATH:-./uploads}
   backend_logs:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOGS_PATH:-./logs}
 
 networks:
   ems-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

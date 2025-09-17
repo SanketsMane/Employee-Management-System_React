@@ -15,7 +15,9 @@ const LoginModal = ({ isOpen, onClose }) => {
     firstName: '',
     lastName: '',
     employeeId: '',
-    role: 'Employee'
+    role: 'Employee',
+    department: '',
+    position: ''
   });
 
   const { login, register } = useAuth();
@@ -41,7 +43,7 @@ const LoginModal = ({ isOpen, onClose }) => {
         if (result.success) {
           toast.success('Registration successful! Please login.');
           setIsLoginMode(true);
-          setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee' });
+          setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee', department: '', position: '' });
         } else {
           toast.error(result.message || 'Registration failed');
         }
@@ -63,7 +65,7 @@ const LoginModal = ({ isOpen, onClose }) => {
 
   const toggleMode = () => {
     setIsLoginMode(!isLoginMode);
-    setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee' });
+    setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee', department: '', position: '' });
   };
 
   return (
@@ -182,6 +184,57 @@ const LoginModal = ({ isOpen, onClose }) => {
                         <option value="Manager">Manager</option>
                         <option value="HR">HR</option>
                         <option value="Admin">Admin</option>
+                        <option value="Software developer trainee">Software developer trainee</option>
+                        <option value="Associate software developer">Associate software developer</option>
+                        <option value="Full stack developer">Full stack developer</option>
+                        <option value="Dot net developer">Dot net developer</option>
+                        <option value="UI UX designer">UI UX designer</option>
+                        <option value="Flutter developer">Flutter developer</option>
+                        <option value="React native developer">React native developer</option>
+                        <option value="Java developer">Java developer</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Position *
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          name="position"
+                          value={formData.position}
+                          onChange={handleInputChange}
+                          required={!isLoginMode}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-colors"
+                          placeholder="Enter your position"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Department *
+                      </label>
+                      <select
+                        name="department"
+                        value={formData.department}
+                        onChange={handleInputChange}
+                        required={!isLoginMode}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-colors"
+                      >
+                        <option value="">Select Department</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Design">Design</option>
+                        <option value="HR">HR</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Support">Support</option>
+                        <option value="IT">IT</option>
+                        <option value="Research & Development">Research & Development</option>
                       </select>
                     </div>
                   </>

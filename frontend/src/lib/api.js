@@ -7,11 +7,24 @@ const getApiBaseUrl = () => {
     return 'http://localhost:8000/api';
   }
   
-  // For production, use the same domain with /api path
+  // Production configuration for Formonex domain (HTTPS-ready)
+  if (window.location.hostname === 'ems.formonex.in') {
+    // Use environment variable for API URL or fallback to production setup
+    // For HTTPS frontend, use HTTP API endpoint (handled by reverse proxy/load balancer)
+    return import.meta.env.VITE_API_BASE_URL || 'http://65.0.94.0:8000/api';
+  }
+  
+  // For other production environments, use the same protocol as the page
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
-  const port = window.location.port === '80' || window.location.port === '443' || !window.location.port ? '' : ':8000';
   
+  // If page is served over HTTPS, try HTTPS API first, fallback to HTTP if needed
+  if (protocol === 'https:') {
+    return import.meta.env.VITE_API_BASE_URL || `https://${hostname}:8000/api`;
+  }
+  
+  // For HTTP pages, use HTTP API
+  const port = window.location.port === '80' || window.location.port === '443' || !window.location.port ? '' : ':8000';
   return `${protocol}//${hostname}${port}/api`;
 };
 
