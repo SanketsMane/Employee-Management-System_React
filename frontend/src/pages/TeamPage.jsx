@@ -136,7 +136,7 @@ const TeamPage = () => {
             }
           </p>
         </div>
-        {(isHR || isAdmin) && (
+        {(isHR() || isAdmin()) && (
           <Button onClick={handleAddEmployee}>
             <UserPlus className="h-4 w-4 mr-2" />
             Add Employee

@@ -17,8 +17,8 @@ COPY . .
 # Stage 2: Production image
 FROM node:18-alpine AS production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init curl
+# Install dumb-init for proper signal handling and update package index
+RUN apk update && apk add --no-cache dumb-init
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -50,9 +50,9 @@ EXPOSE 8000
 ENV NODE_ENV=production
 ENV PORT=8000
 
-# Health check
+# Health check with wget (available in node:alpine)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1
 
 # Start the application with dumb-init
 CMD ["dumb-init", "node", "server.js"]

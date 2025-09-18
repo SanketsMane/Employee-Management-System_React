@@ -35,7 +35,7 @@ const AdminLeavesPage = () => {
   });
 
   useEffect(() => {
-    if (isAdmin || isHR || user?.role === 'Manager') {
+    if (isAdmin() || isHR() || user?.role === 'Manager') {
       fetchLeaves();
       fetchDepartments();
     }
@@ -165,7 +165,7 @@ const AdminLeavesPage = () => {
     }
   };
 
-  if (!isAdmin && !isHR && user?.role !== 'Manager') {
+  if (!isAdmin() && !isHR() && user?.role !== 'Manager') {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Access denied. Only Admins, HR, and Managers can manage leaves.</p>

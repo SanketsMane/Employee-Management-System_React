@@ -91,11 +91,21 @@ const RoleBasedPageWrapper = ({ AdminComponent, RegularComponent, requiresAdminA
   const isHR = user?.role === 'HR';
   const isManager = user?.role === 'Manager';
   
-  // For pages that should show admin view for Admin/HR/Manager
-  if (requiresAdminAccess && (isAdmin || isHR || isManager)) {
+  // If user has admin privileges, show admin component
+  if (isAdmin || isHR || isManager) {
     return <AdminComponent />;
   }
   
+  // If requiresAdminAccess is true and user is not admin, show access denied
+  if (requiresAdminAccess) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Access denied. Admin privileges required.</p>
+      </div>
+    );
+  }
+  
+  // Otherwise show regular component
   return <RegularComponent />;
 };
 
@@ -160,7 +170,7 @@ function AppContent() {
                 <RoleBasedPageWrapper 
                   AdminComponent={AdminAttendancePage}
                   RegularComponent={AttendancePageNew}
-                  requiresAdminAccess={true}
+                  requiresAdminAccess={false}
                 />
               </Layout>
             </ProtectedRoute>

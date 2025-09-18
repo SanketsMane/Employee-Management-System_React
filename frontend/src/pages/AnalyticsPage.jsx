@@ -55,7 +55,7 @@ const AnalyticsPage = () => {
     }
   };
 
-  if (!isHR && !isAdmin) {
+  if (!isHR() && !isAdmin()) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Access denied. Only HR and Admins can view analytics.</p>

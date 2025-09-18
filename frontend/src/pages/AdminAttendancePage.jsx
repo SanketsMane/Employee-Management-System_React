@@ -34,11 +34,11 @@ const AdminAttendancePage = () => {
   });
 
   useEffect(() => {
-    if (isAdmin || isHR) {
+    if (isAdmin() || isHR()) {
       fetchAttendanceData();
       fetchDepartments();
     }
-  }, [selectedDate, selectedDepartment, isAdmin, isHR]);
+  }, [selectedDate, selectedDepartment]);
 
   const fetchAttendanceData = async () => {
     try {
@@ -55,13 +55,11 @@ const AdminAttendancePage = () => {
       });
 
       if (response.data.success && response.data.data) {
-        console.log('Fetched attendance data:', response.data.data);
         const attendanceRecords = Array.isArray(response.data.data) ? response.data.data : 
                                   (response.data.data.attendanceRecords || []);
         setAttendanceData(attendanceRecords);
         calculateStats(attendanceRecords);
       } else {
-        console.log('No attendance data found');
         setAttendanceData([]);
         calculateStats([]);
       }
@@ -222,7 +220,7 @@ const AdminAttendancePage = () => {
     }
   };
 
-  if (!isAdmin && !isHR) {
+  if (!isAdmin() && !isHR()) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Access denied. Only Admins and HR can view attendance data.</p>
@@ -408,11 +406,13 @@ const AdminAttendancePage = () => {
                   }) : (
                     <tr>
                       <td colSpan="7" className="text-center p-8 text-muted-foreground">
-                        No attendance records found for the selected criteria.
-                        <br />
-                        <small className="text-xs">
-                          Total records: {attendanceData.length}, Filtered: {filteredData.length}
-                        </small>
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="text-lg">No attendance records found</div>
+                          <div className="text-sm">
+                            No employees have checked in for {new Date(selectedDate).toLocaleDateString()}
+                            {selectedDepartment !== 'all' && ` in ${selectedDepartment} department`}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   )}
