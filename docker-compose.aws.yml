@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: sanketsmane/ems-backend:verified
+    image: sanketsmane/ems-backend:v1.3-fixed
     container_name: ems-backend-prod
     restart: unless-stopped
     ports:
