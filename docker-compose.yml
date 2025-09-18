@@ -1,45 +1,68 @@
-services:
-  # Frontend Service
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=http://backend:5000/api
-      - VITE_WEBSOCKET_URL=ws://backend:5000
-    depends_on:
-      - backend
-    networks:
-      - ems-network
+version: '3.8'
 
+services:
   # Backend Service
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: ems-backend
     ports:
-      - "8000:5000"
+      - "8000:8000"
     environment:
       - NODE_ENV=production
-      - PORT=5000
-      - MONGODB_URI=${MONGODB_URI}
-      - JWT_SECRET=${JWT_SECRET}
+      - PORT=8000
+      - MONGODB_URI=${MONGODB_URI:-mongodb://localhost:27017/ems}
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-key}
+      - JWT_EXPIRE=${JWT_EXPIRE:-7d}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
-      - FRONTEND_URL=http://frontend
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
     volumes:
       - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
     networks:
       - ems-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ems-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - ems-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
 networks:
   ems-network:
     driver: bridge
+    name: ems-network
 
 volumes:
   backend_uploads:
+    driver: local
+  backend_logs:
+    driver: local

@@ -30,6 +30,7 @@ const companyRoutes = require('./routes/companyRoutes');
 const bugReportRoutes = require('./routes/bugReportRoutes');
 const overtimeRoutes = require('./routes/overtimeRoutes');
 const systemConfigRoutes = require('./routes/systemConfigRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 // Connect to database
 connectDB();
@@ -213,6 +214,7 @@ app.use('/api/overtime', overtimeRoutes);
 app.use('/api/bug-reports', bugReportRoutes);
 app.use('/api/system/config', systemConfigRoutes);
 app.use('/api/announcements', require('./routes/announcementRoutes'));
+app.use('/api/contact', contactRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

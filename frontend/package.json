@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "4.5.0",
+  "version": "5.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -11,7 +11,6 @@
     "build:analyze": "npm run build && npx vite-bundle-analyzer dist",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy:hostinger": "./deploy-hostinger.sh",
     "test:build": "npm run build && npm run preview",
     "clean": "rm -rf dist",
     "prebuild": "npm run clean"
@@ -29,7 +28,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "framer-motion": "^12.23.12",
+    "framer-motion": "^12.23.14",
     "lucide-react": "^0.540.0",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.3.0",

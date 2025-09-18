@@ -1,10 +1,10 @@
-# EMS v4.5 - Docker Hub Deployment Ready 🚀
+# EMS v5.0.0 - Docker Hub Deployment Ready 🚀
 
 ## ✅ Images Successfully Pushed to Docker Hub
 
 ### Available Images:
-- **Backend**: `sanketsmane/ems-backend:v4.5` (333MB)
-- **Frontend**: `sanketsmane/ems-frontend:v4.5` (89.4MB)
+- **Backend**: `sanketsmane/ems-backend:5.0.0` (497MB - Ubuntu-based for AWS)
+- **Frontend**: `sanketsmane/ems-frontend:5.0.0` (77.9MB - Nginx-optimized)
 - **Both also tagged as**: `latest`
 
 ### Docker Hub URLs:
@@ -22,45 +22,44 @@ version: '3.8'
 
 services:
   backend:
-    image: sanketsmane/ems-backend:v4.5
+    image: sanketsmane/ems-backend:5.0.0
     container_name: ems-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "5000:5000"
     environment:
       - NODE_ENV=production
-      - PORT=8000
+      - PORT=5000
       - MONGODB_URI=mongodb+srv://your-username:your-password@cluster.mongodb.net/ems_production
       - JWT_SECRET=your-super-secret-jwt-key
-      - JWT_EXPIRE=7d
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PORT=587
-      - SMTP_USER=your-email@company.com
-      - SMTP_PASS=your-app-password
-      - FROM_EMAIL=noreply@yourcompany.com
+      - JWT_EXPIRES_IN=24h
+      - EMAIL_SERVICE=gmail
+      - EMAIL_USER=your-email@company.com
+      - EMAIL_PASS=your-app-password
       - CLOUDINARY_CLOUD_NAME=your-cloudinary-name
       - CLOUDINARY_API_KEY=your-cloudinary-key
       - CLOUDINARY_API_SECRET=your-cloudinary-secret
+      - FRONTEND_URL=http://your-server-ip
     volumes:
       - backend_uploads:/app/uploads
       - backend_logs:/app/logs
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
   frontend:
-    image: sanketsmane/ems-frontend:v4.5
+    image: sanketsmane/ems-frontend:5.0.0
     container_name: ems-frontend
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     environment:
-      - REACT_APP_API_URL=http://your-server-ip:8000
-      - REACT_APP_WEBSOCKET_URL=ws://your-server-ip:8000
+      - REACT_APP_API_URL=http://your-server-ip:5000
+      - REACT_APP_WEBSOCKET_URL=ws://your-server-ip:5000
     depends_on:
       - backend
     healthcheck:
@@ -100,21 +99,21 @@ docker network create ems-network
 docker run -d \
   --name ems-backend \
   --network ems-network \
-  -p 8000:8000 \
+  -p 5000:5000 \
   -e NODE_ENV=production \
   -e MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/ems" \
   -e JWT_SECRET="your-secret-key" \
   --restart unless-stopped \
-  sanketsmane/ems-backend:v4.5
+  sanketsmane/ems-backend:5.0.0
 
 # Start frontend
 docker run -d \
   --name ems-frontend \
   --network ems-network \
   -p 80:80 \
-  -e REACT_APP_API_URL="http://your-server-ip:8000" \
+  -e REACT_APP_API_URL="http://your-server-ip:5000" \
   --restart unless-stopped \
-  sanketsmane/ems-frontend:v4.5
+  sanketsmane/ems-frontend:5.0.0
 ```
 
 ## 🔧 Production Environment Setup
@@ -124,19 +123,17 @@ docker run -d \
 #### Backend (Essential):
 ```bash
 NODE_ENV=production
-PORT=8000
+PORT=5000
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/ems_production
 JWT_SECRET=your-super-secret-jwt-key
-JWT_EXPIRE=7d
+JWT_EXPIRES_IN=24h
 ```
 
 #### Email Configuration:
 ```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@company.com
-SMTP_PASS=your-app-password
-FROM_EMAIL=noreply@yourcompany.com
+EMAIL_SERVICE=gmail
+EMAIL_USER=your-email@company.com
+EMAIL_PASS=your-app-password
 ```
 
 #### File Upload (Cloudinary):
@@ -157,7 +154,7 @@ REACT_APP_WEBSOCKET_URL=wss://api.yourcompany.com
 ### Infrastructure:
 - [ ] Docker and Docker Compose installed
 - [ ] Minimum 4GB RAM, 20GB storage
-- [ ] Ports 80, 443, 8000 available
+- [ ] Ports 80, 443, 5000 available
 - [ ] Domain name configured (optional)
 
 ### Services:
@@ -175,7 +172,7 @@ REACT_APP_WEBSOCKET_URL=wss://api.yourcompany.com
 ## 🔍 Health Checks & Monitoring
 
 ### Health Check Endpoints:
-- **Backend**: `http://your-server:8000/health`
+- **Backend**: `http://your-server:5000/api/health`
 - **Frontend**: `http://your-server/`
 
 ### Monitor Containers:
@@ -195,16 +192,16 @@ docker stats
 
 ```bash
 # Pull images
-docker pull sanketsmane/ems-backend:v4.5
-docker pull sanketsmane/ems-frontend:v4.5
+docker pull sanketsmane/ems-backend:5.0.0
+docker pull sanketsmane/ems-frontend:5.0.0
 
 # Quick test run
-docker run -d -p 8000:8000 -e NODE_ENV=production sanketsmane/ems-backend:v4.5
-docker run -d -p 80:80 sanketsmane/ems-frontend:v4.5
+docker run -d -p 5000:5000 -e NODE_ENV=production sanketsmane/ems-backend:5.0.0
+docker run -d -p 80:80 sanketsmane/ems-frontend:5.0.0
 
 # Access application
 # Frontend: http://your-server-ip
-# Backend API: http://your-server-ip:8000
+# Backend API: http://your-server-ip:5000
 ```
 
 ## 🔧 Troubleshooting
@@ -238,4 +235,4 @@ docker exec ems-backend node -e "console.log(process.env.MONGODB_URI)"
 ---
 
 **✅ Deployment Ready!** 
-Your EMS v4.5 is now available on Docker Hub and ready for production deployment by your DevOps team.
+Your EMS v5.0.0 is now available on Docker Hub and ready for production deployment by your DevOps team.

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40">
+  <rect width="120" height="40" fill="white" rx="4"/>
+  <text x="20" y="26" font-family="Product Sans, Arial, sans-serif" font-size="16" font-weight="400" fill="#4285F4">G</text>
+  <text x="32" y="26" font-family="Product Sans, Arial, sans-serif" font-size="16" font-weight="400" fill="#EA4335">o</text>
+  <text x="44" y="26" font-family="Product Sans, Arial, sans-serif" font-size="16" font-weight="400" fill="#FBBC05">o</text>
+  <text x="56" y="26" font-family="Product Sans, Arial, sans-serif" font-size="16" font-weight="400" fill="#4285F4">g</text>
+  <text x="68" y="26" font-family="Product Sans, Arial, sans-serif" font-size="16" font-weight="400" fill="#34A853">l</text>
+  <text x="76" y="26" font-family="Product Sans, Arial, sans-serif" font-size="16" font-weight="400" fill="#EA4335">e</text>
+</svg>

@@ -289,6 +289,31 @@ The application is fully responsive and works seamlessly on:
 
 ## 🚀 Deployment
 
+### ✅ **Live Demo**
+**FormoEMS is successfully deployed at**: [https://ems.formonex.in](https://ems.formonex.in)
+
+### 📋 **Quick Deployment Guide**
+For detailed deployment instructions, see: **[SUCCESSFUL_DEPLOYMENT_GUIDE.md](./SUCCESSFUL_DEPLOYMENT_GUIDE.md)**
+
+### **Docker Deployment (AWS EC2 - Recommended)**
+```bash
+# Clone the repository
+git clone https://github.com/SanketsMane/Employee-Management-System_React.git
+cd Employee-Management-System_React
+
+# Use the proven working configuration
+docker-compose -f docker-compose.aws.yml up -d
+
+# Setup nginx proxy (see deployment guide for details)
+sudo nginx -t && sudo systemctl start nginx
+```
+
+### **Key Configuration Notes**
+- **Frontend Port**: 8080 (proxied to 80 via nginx)
+- **Backend Port**: 8000
+- **Database**: MongoDB Atlas
+- **Images**: `sanketsmane/ems-backend:verified` & `sanketsmane/ems-frontend:verified`
+
 ### Backend Deployment (Heroku/Railway/DigitalOcean)
 1. Set environment variables on your hosting platform
 2. Update MongoDB connection string

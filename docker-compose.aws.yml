@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  backend:
+    image: sanketsmane/ems-backend:verified
+    container_name: ems-backend-prod
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Production Environment Configuration for AWS EC2
+      - NODE_ENV=production
+      - PORT=8000
+      
+      # MongoDB Configuration (MongoDB Atlas)
+      - MONGODB_URI=mongodb+srv://hackable3030:f9pZaA7rmlUkQ97N@cluster0.o6vez6l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      
+      # JWT Configuration
+      - JWT_SECRET=FORMONEX07SANKET01NITIN07EMS
+      - JWT_EXPIRE=7d
+      
+      # Email Configuration
+      - EMAIL_ENABLED=true
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_USER=formonexsolutions@gmail.com
+      - EMAIL_PASS=hnkn kucq biqt fovt
+      - EMAIL_FROM=formonexsolutions@gmail.com
+      
+      # Frontend URL (Hostinger domain)
+      - FRONTEND_URL=https://ems.formonex.in
+      
+      # Cloudinary Configuration
+      - CLOUDINARY_URL=cloudinary://564439426461569:yH7p_TOyWeEQjCfRaxwxxLc0FG0@dr7mlwdso
+      - CLOUDINARY_CLOUD_NAME=dr7mlwdso
+      - CLOUDINARY_API_KEY=564439426461569
+      - CLOUDINARY_API_SECRET=yH7p_TOyWeEQjCfRaxwxxLc0FG0
+      
+      # Admin Configuration
+      - ADMIN_EMAIL=contactsanket1@gmail.com
+      - ADMIN_PASSWORD=Sanket@3030
+      
+      # Security (Production settings)
+      - RATE_LIMIT_WINDOW=150
+      - RATE_LIMIT_MAX=100
+      
+      # Company Configuration
+      - COMPANY_NAME=Formonex
+      - COMPANY_EMAIL=info@formonex.com
+      - COMPANY_WEBSITE=https://formonex.com
+      - COMPANY_ADDRESS=India
+      - COMPANY_PHONE=+91-XXX-XXX-XXXX
+      
+      # CORS Configuration
+      - ALLOWED_ORIGINS=https://ems.formonex.in,https://formonex.in
+      
+      # AWS Specific
+      - AWS_REGION=ap-south-1
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    
+    networks:
+      - ems-network
+
+  frontend:
+    image: sanketsmane/ems-frontend:verified
+    container_name: ems-frontend-prod
+    restart: unless-stopped
+    ports:
+      - "8080:80"  # Changed to 8080 to avoid conflicts with nginx proxy
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    
+    networks:
+      - ems-network
+
+volumes:
+  backend_uploads:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  ems-network:
+    driver: bridge
