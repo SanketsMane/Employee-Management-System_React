@@ -126,7 +126,7 @@ export const WebSocketProvider = ({ children }) => {
     });
 
     newSocket.on('notification:new', (notification) => {
-      setNotifications(prev => [notification, ...prev]);
+      setNotifications(prev => [notification, ...(Array.isArray(prev) ? prev : [])]);
       
       // Show browser notification if permitted
       if (Notification.permission === 'granted') {
@@ -192,7 +192,7 @@ export const WebSocketProvider = ({ children }) => {
     if (socket && connected) {
       socket.emit('notification:read', notificationId);
       setNotifications(prev => 
-        prev.map(notif => 
+        (Array.isArray(prev) ? prev : []).map(notif => 
           notif.id === notificationId 
             ? { ...notif, read: true }
             : notif

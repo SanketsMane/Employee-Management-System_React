@@ -259,8 +259,13 @@ curl -s http://localhost:8000/
 
 ### **Live Site**
 ```bash
-curl -I http://ems.formonex.in
+# Test with cache-busting parameter
+curl -I "http://ems.formonex.in?t=$(date +%s)"
 # Should return: HTTP/1.1 200 OK with modern HTML content
+
+# If browser shows old content, use hard refresh:
+# Chrome/Firefox: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
+# Or open in incognito/private window
 ```
 
 ---
@@ -274,6 +279,13 @@ curl -I http://ems.formonex.in
 - ✅ No "Loading..." screen
 - ✅ API endpoints responding
 - ✅ Database connectivity confirmed
+
+### 🌐 **Browser Cache Issues**
+If the site still shows "Loading..." or old content:
+- **Hard Refresh**: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
+- **Incognito Mode**: Open in private/incognito window
+- **Clear Cache**: Clear browser cache and cookies for the domain
+- **Test URL**: Use `https://ems.formonex.in?t=123456` with random number
 
 ---
 
