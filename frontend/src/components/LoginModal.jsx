@@ -4,6 +4,7 @@ import { X, Eye, EyeOff, Mail, Lock, User, Users, AlertCircle } from 'lucide-rea
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import RoleAutocomplete from './RoleAutocomplete';
 
 const LoginModal = ({ isOpen, onClose }) => {
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -16,8 +17,8 @@ const LoginModal = ({ isOpen, onClose }) => {
     lastName: '',
     employeeId: '',
     role: 'Employee',
-    department: '',
-    position: ''
+    customRole: '',
+    department: ''
   });
 
   const { login, register } = useAuth();
@@ -43,7 +44,7 @@ const LoginModal = ({ isOpen, onClose }) => {
         if (result.success) {
           toast.success('Registration successful! Please login.');
           setIsLoginMode(true);
-          setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee', department: '', position: '' });
+          setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee', customRole: '', department: '' });
         } else {
           toast.error(result.message || 'Registration failed');
         }
@@ -65,7 +66,7 @@ const LoginModal = ({ isOpen, onClose }) => {
 
   const toggleMode = () => {
     setIsLoginMode(!isLoginMode);
-    setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee', department: '', position: '' });
+    setFormData({ email: '', password: '', firstName: '', lastName: '', employeeId: '', role: 'Employee', customRole: '', department: '' });
   };
 
   return (
@@ -171,49 +172,17 @@ const LoginModal = ({ isOpen, onClose }) => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Role
+                        Role *
                       </label>
-                      <select
-                        name="role"
+                      <RoleAutocomplete
                         value={formData.role}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-colors"
-                      >
-                        <option value="Employee">Employee</option>
-                        <option value="Team Lead">Team Lead</option>
-                        <option value="Manager">Manager</option>
-                        <option value="HR">HR</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Software developer trainee">Software developer trainee</option>
-                        <option value="Associate software developer">Associate software developer</option>
-                        <option value="Full stack developer">Full stack developer</option>
-                        <option value="Dot net developer">Dot net developer</option>
-                        <option value="UI UX designer">UI UX designer</option>
-                        <option value="Flutter developer">Flutter developer</option>
-                        <option value="React native developer">React native developer</option>
-                        <option value="Java developer">Java developer</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Position *
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          type="text"
-                          name="position"
-                          value={formData.position}
-                          onChange={handleInputChange}
-                          required={!isLoginMode}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-colors"
-                          placeholder="Enter your position"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
+                        onChange={(role) => setFormData(prev => ({ ...prev, role }))}
+                        onCustomRoleChange={(customRole) => setFormData(prev => ({ ...prev, customRole }))}
+                        customRole={formData.customRole}
+                        placeholder="Search for your role..."
+                        required={!isLoginMode}
+                      />
+                    </div>                    <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Department *
                       </label>

@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Log = require('../models/Log');
+const Notification = require('../models/Notification');
 const { sendEmail } = require('../utils/emailService');
+const webSocketService = require('../services/websocket');
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -37,6 +39,7 @@ exports.register = async (req, res, next) => {
       email,
       password,
       role,
+      customRole,
       department,
       position,
       phone,
@@ -54,6 +57,14 @@ exports.register = async (req, res, next) => {
       });
     }
 
+    // Validate custom role if "Other" is selected
+    if (role === 'Other' && !customRole) {
+      return res.status(400).json({
+        success: false,
+        message: 'Custom role is required when "Other" is selected'
+      });
+    }
+
     // Create user
     const userData = {
       firstName,
@@ -61,10 +72,13 @@ exports.register = async (req, res, next) => {
       email,
       password,
       role: role || 'Employee',
+      customRole: role === 'Other' ? customRole : undefined,
       department,
-      position,
+      position: position || customRole || role || 'Employee', // Use customRole if provided
       phone,
-      salary: salary || 0
+      salary: salary || 0,
+      isApproved: false,  // Explicitly set to false - user needs admin approval
+      isActive: true      // User account is active but not approved
     };
 
     // Set manager and team lead if provided
@@ -83,6 +97,53 @@ exports.register = async (req, res, next) => {
     }
 
     const user = await User.create(userData);
+
+    // Create notification for all admins about new user registration
+    try {
+      const adminUsers = await User.find({ role: 'Admin', isActive: true }).select('_id');
+      
+      if (adminUsers.length > 0) {
+        const adminRecipients = adminUsers.map(admin => ({
+          user: admin._id,
+          isRead: false
+        }));
+
+        const notification = await Notification.create({
+          title: '👤 New User Registration',
+          message: `${firstName} ${lastName} (${email}) has registered and is waiting for approval.`,
+          type: 'approval',
+          sender: user._id,
+          recipients: adminRecipients,
+          priority: 'High',
+          actionUrl: '/admin/users',
+          metadata: {
+            userId: user._id,
+            userEmail: email,
+            userRole: role || 'Employee',
+            userDepartment: department,
+            userPosition: position,
+            requiresApproval: true
+          }
+        });
+
+        // Send real-time notification to all admins via WebSocket
+        webSocketService.sendNotificationToRole('Admin', {
+          id: notification._id,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          priority: notification.priority,
+          actionUrl: notification.actionUrl,
+          metadata: notification.metadata,
+          createdAt: notification.createdAt
+        });
+
+        console.log(`📬 Created and sent approval notification to ${adminUsers.length} admin(s)`);
+      }
+    } catch (notificationError) {
+      console.error('❌ Failed to create admin notification:', notificationError);
+      // Don't fail registration if notification creation fails
+    }
 
     // Log the registration
     await Log.create({
@@ -208,12 +269,58 @@ exports.register = async (req, res, next) => {
       // Welcome email sending failed, but continue with registration
     }
 
-    sendTokenResponse(user, 201, res);
+    // Send success response without token (user needs admin approval)
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful! Please wait for admin approval before you can login.',
+      data: {
+        user: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          employeeId: user.employeeId,
+          department: user.department,
+          position: user.position,
+          isApproved: user.isApproved
+        }
+      }
+    });
   } catch (error) {
+    console.error('Registration error:', error);
+    
+    // Handle specific errors
+    if (error.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      let message = 'Registration failed due to duplicate data';
+      
+      if (field === 'email') {
+        message = 'A user with this email address already exists';
+      } else if (field === 'employeeId') {
+        message = 'Employee ID generation failed. Please try again.';
+      }
+      
+      return res.status(400).json({
+        success: false,
+        message,
+        error: error.message
+      });
+    }
+    
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: messages
+      });
+    }
+    
+    // Generic server error
     res.status(500).json({
       success: false,
       message: 'Server error during registration',
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Please try again later'
     });
   }
 };
@@ -286,9 +393,22 @@ exports.login = async (req, res, next) => {
 
     // Check if user is approved (except for Admin role)
     if (user.role !== 'Admin' && !user.isApproved) {
+      // Log unapproved login attempt
+      await Log.create({
+        user: user._id,
+        action: 'Failed Login - Not Approved',
+        category: 'Authentication',
+        details: `Login attempt by unapproved user: ${email}. Role: ${user.role}, isApproved: ${user.isApproved}`,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        success: false,
+        errorMessage: 'Account pending approval'
+      });
+
       return res.status(401).json({
         success: false,
-        message: 'Your account is pending approval. Please wait for admin approval.'
+        message: 'Your account is pending approval. Please wait for admin approval before you can login.',
+        accountStatus: 'pending_approval'
       });
     }
 

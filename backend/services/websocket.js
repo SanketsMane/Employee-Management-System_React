@@ -14,11 +14,25 @@ class WebSocketService {
         origin: [
           "http://localhost:3000",
           "http://localhost:5173", 
-          "http://localhost:5174"
-        ],
-        methods: ["GET", "POST"],
-        credentials: true
-      }
+          "http://localhost:5174",
+          "https://ems.formonex.in",
+          "http://ems.formonex.in",
+          "https://formonex.in",
+          "http://formonex.in",
+          process.env.FRONTEND_URL
+        ].filter(Boolean), // Remove any undefined values
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        credentials: true,
+        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+        optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+      },
+      // PERMANENT FIX: Configure for mixed content environments
+      allowEIO3: true,
+      transports: ['polling', 'websocket'], // Allow both but client will choose polling
+      upgrade: true,
+      rememberUpgrade: false, // Don't remember to prevent future websocket attempts
+      pingTimeout: 60000,
+      pingInterval: 25000
     });
 
     // Authentication middleware for socket connections

@@ -1,0 +1,37 @@
+# Updated Backend Dockerfile with Debug Support
+FROM node:18-alpine
+
+# Install debugging tools
+RUN apk add --no-cache curl
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy app source
+COPY . .
+
+# Create uploads and logs directories
+RUN mkdir -p uploads logs && \
+    chown -R node:node /app
+
+# Add debugging script
+COPY start-backend-fixed.js ./debug-server.js
+
+# Switch to non-root user
+USER node
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/api/health || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Default command (can be overridden for debugging)
+CMD ["node", "server.js"]

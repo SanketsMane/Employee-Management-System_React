@@ -44,7 +44,7 @@ const UsersPage = () => {
     salary: ''
   });
 
-  const roles = ['Employee', 'Team Lead', 'Manager', 'HR', 'Admin'];
+  const roles = ['Employee', 'Intern', 'Team Lead', 'Manager', 'HR', 'Admin'];
   const departments = ['Engineering', 'Design', 'Product', 'Marketing', 'Sales', 'HR', 'Finance', 'Operations'];
 
   useEffect(() => {

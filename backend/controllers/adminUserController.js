@@ -9,6 +9,7 @@ const Attendance = require('../models/Attendance');
 const { sendEmail } = require('../utils/emailService');
 const { generateToken } = require('../controllers/authController');
 const { sendQuickSMS } = require('../utils/smsService');
+const webSocketService = require('../services/websocket');
 
 // Generate random password
 const generateRandomPassword = () => {
@@ -541,6 +542,44 @@ exports.approveUser = async (req, res) => {
     user.approvedBy = req.user.id;
     user.approvedAt = new Date();
     await user.save();
+
+    // Create notification for the approved user
+    try {
+      const notification = await Notification.create({
+        title: '✅ Account Approved!',
+        message: `Your account has been approved by ${req.user.firstName} ${req.user.lastName}. You can now login and access the system.`,
+        type: 'success',
+        sender: req.user.id,
+        recipients: [{
+          user: user._id,
+          isRead: false
+        }],
+        priority: 'High',
+        actionUrl: '/login',
+        metadata: {
+          approvedBy: req.user.id,
+          approvedAt: new Date(),
+          approverName: `${req.user.firstName} ${req.user.lastName}`
+        }
+      });
+
+      // Send real-time notification to the approved user via WebSocket
+      webSocketService.sendNotificationToUser(user._id, {
+        id: notification._id,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        priority: notification.priority,
+        actionUrl: notification.actionUrl,
+        metadata: notification.metadata,
+        createdAt: notification.createdAt
+      });
+
+      console.log(`📬 Created and sent approval notification to user: ${user.email}`);
+    } catch (notificationError) {
+      console.error('❌ Failed to create approval notification:', notificationError);
+      // Don't fail approval if notification creation fails
+    }
 
     // Remove password from response
     const userResponse = { ...user.toObject() };

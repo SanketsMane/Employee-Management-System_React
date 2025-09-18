@@ -28,7 +28,7 @@ export default defineConfig({
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000
   },
-  base: './', // Use relative paths for better compatibility
+  base: '/', // Use absolute paths for production deployment
   server: {
     host: true,
     port: 5173

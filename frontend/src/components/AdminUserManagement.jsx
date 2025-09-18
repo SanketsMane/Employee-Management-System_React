@@ -48,7 +48,7 @@ const AdminUserManagement = () => {
   });
 
   // Role management
-  const defaultRoles = ['Admin', 'HR', 'Manager', 'Employee'];
+  const defaultRoles = ['Admin', 'HR', 'Manager', 'Employee', 'Intern'];
   const [customRoles, setCustomRoles] = useState([]);
   const [roleObjects, setRoleObjects] = useState([]); // Store full role objects for ID access
   const [newRole, setNewRole] = useState('');

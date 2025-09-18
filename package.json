@@ -1,6 +1,6 @@
 {
   "name": "employee-management-system",
-  "version": "1.0.0",
+  "version": "4.5.0",
   "description": "Full-stack Employee Management System with MERN stack",
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",

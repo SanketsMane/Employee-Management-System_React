@@ -111,7 +111,7 @@ const LandingPage = ({ openLogin = false }) => {
       name: "Sarah Johnson",
       role: "HR Director",
       company: "TechCorp Inc.",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face&auto=format",
+      avatar: "/images/avatar-female-1.svg",
       text: "This platform revolutionized our HR processes. The efficiency gains are remarkable! Our team productivity increased by 40% within the first month.",
       rating: 5
     },
@@ -119,7 +119,7 @@ const LandingPage = ({ openLogin = false }) => {
       name: "Michael Chen",
       role: "Operations Manager",
       company: "Global Solutions",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&auto=format",
+      avatar: "/images/avatar-male-1.svg",
       text: "The analytics dashboard provides incredible insights into our team's productivity. Real-time attendance tracking has been a game-changer.",
       rating: 5
     },
@@ -127,7 +127,7 @@ const LandingPage = ({ openLogin = false }) => {
       name: "Emily Rodriguez",
       role: "Team Lead",
       company: "Innovation Labs",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face&auto=format",
+      avatar: "/images/avatar-female-2.svg",
       text: "Excellent user experience and powerful features. The leave management system alone saved us 10 hours per week in administrative work.",
       rating: 5
     }
@@ -592,7 +592,7 @@ const LandingPage = ({ openLogin = false }) => {
                       alt={testimonial.name}
                       className="h-12 w-12 rounded-full mr-4 object-cover ring-2 ring-blue-100 dark:ring-blue-800 group-hover:ring-blue-300 dark:group-hover:ring-blue-600 transition-all"
                       onError={(e) => {
-                        e.target.src = `https://ui-avatars.com/api/?name=${testimonial.name}&background=3B82F6&color=fff&size=150`;
+                        e.target.src = "/images/avatar-female-1.svg";
                       }}
                     />
                     <div>

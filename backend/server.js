@@ -98,10 +98,10 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// CORS configuration
+// CORS configuration - PERMANENT FIX for WebSocket polling
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // Allow requests with no origin (mobile apps, Postman, socket.io polling, etc.)
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
@@ -150,7 +150,18 @@ const corsOptions = {
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  // PERMANENT FIX: Allow all methods for socket.io polling
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept', 
+    'Origin',
+    'X-Socket-Id', // Socket.io specific headers
+    'X-Socket-Transport'
+  ]
 };
 
 app.use(cors(corsOptions));

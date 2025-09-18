@@ -1,5 +1,6 @@
-{
-  "name": "ems-backend",
+{  "name": "ems-backend",
+  "version": "4.5.0",
+  "description": "Employee Management System Backend API","name": "ems-backend",
   "version": "1.0.0",
   "description": "Employee Management System Backend",
   "main": "server.js",
@@ -32,6 +33,7 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "nodemon": "^3.0.1"
   },
   "keywords": [

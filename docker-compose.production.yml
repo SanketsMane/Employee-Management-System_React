@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: sanketsmane/ems-backend:${VERSION:-latest}
+    image: sanketsmane/ems-backend:${VERSION:-v4.1}
     container_name: ems-backend-prod
     build:
       context: ./backend
@@ -65,7 +65,7 @@ services:
         max-file: "3"
 
   frontend:
-    image: sanketsmane/ems-frontend:${VERSION:-latest}
+    image: sanketsmane/ems-frontend:${VERSION:-v4.1}
     container_name: ems-frontend-prod
     build:
       context: ./frontend

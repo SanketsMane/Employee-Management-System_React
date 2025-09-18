@@ -1,0 +1,72 @@
+# Simplified Docker image for frontend v4.5
+# Build stage
+FROM ubuntu:22.04 AS builder
+
+# Install Node.js and necessary tools
+RUN apt-get update && \
+    apt-get install -y curl build-essential && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy source and build
+COPY . .
+
+# Build arguments for environment variables
+ARG VITE_API_BASE_URL=https://ems.formonex.in/api
+ARG VITE_WEBSOCKET_URL=wss://ems.formonex.in
+ARG VITE_APP_NAME=Formonex EMS - Employee Management System
+ARG VITE_APP_VERSION=4.5.0
+ARG VITE_ENVIRONMENT=production
+ARG VITE_COMPANY_NAME=Formonex
+ARG VITE_ENABLE_WEBSOCKET=true
+ARG VITE_ENABLE_NOTIFICATIONS=true
+ARG VITE_ENABLE_FILE_UPLOAD=true
+
+# Set environment variables for build
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL}
+ENV VITE_APP_NAME=${VITE_APP_NAME}
+ENV VITE_APP_VERSION=${VITE_APP_VERSION}
+ENV VITE_ENVIRONMENT=${VITE_ENVIRONMENT}
+ENV VITE_COMPANY_NAME=${VITE_COMPANY_NAME}
+ENV VITE_ENABLE_WEBSOCKET=${VITE_ENABLE_WEBSOCKET}
+ENV VITE_ENABLE_NOTIFICATIONS=${VITE_ENABLE_NOTIFICATIONS}
+ENV VITE_ENABLE_FILE_UPLOAD=${VITE_ENABLE_FILE_UPLOAD}
+
+RUN npm run build
+
+# Production stage
+FROM ubuntu:22.04
+
+# Install nginx
+RUN apt-get update && \
+    apt-get install -y nginx curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy built app
+COPY --from=builder /app/dist /var/www/html
+
+# Copy nginx config
+COPY nginx.conf /etc/nginx/sites-available/default
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

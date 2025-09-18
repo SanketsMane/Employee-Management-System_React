@@ -274,7 +274,7 @@ const AdminAnnouncementsPage = () => {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [roles] = useState([
-    'Admin', 'HR', 'Manager', 'Team Lead', 'Employee', 
+    'Admin', 'HR', 'Manager', 'Team Lead', 'Employee', 'Intern',
     'Software developer trainee', 'Associate software developer', 
     'Full stack developer', 'Dot net developer', 'UI UX designer', 
     'Flutter developer', 'React native developer', 'Java developer'

@@ -18,6 +18,7 @@ export const WebSocketProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [leaderboard, setLeaderboard] = useState(null);
+  const [error, setError] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -46,41 +47,80 @@ export const WebSocketProvider = ({ children }) => {
       socket.disconnect();
     }
 
-    const newSocket = io(import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000', {
+    // Production WebSocket Configuration - Fixed Mixed Content Issue
+    const getWebSocketConfig = () => {
+      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const isHttps = window.location.protocol === 'https:';
+      
+      if (isDev) {
+        return {
+          url: 'http://localhost:8000',
+          transports: ['websocket', 'polling'],
+          withCredentials: false
+        };
+      }
+      
+      // Production: Use HTTPS URL to match the site's protocol
+      return {
+        url: 'https://ems.formonex.in', // Same domain WebSocket via proxy
+        transports: ['polling'], // Use polling to avoid websocket issues
+        withCredentials: true,
+        upgrade: false,
+        rememberUpgrade: false
+      };
+    };
+
+    const config = getWebSocketConfig();
+
+    const newSocket = io(config.url, {
       auth: {
         token: token
       },
-      transports: ['websocket', 'polling']
+      transports: config.transports,
+      withCredentials: config.withCredentials,
+      upgrade: config.upgrade || true,
+      rememberUpgrade: config.rememberUpgrade !== false,
+      timeout: 20000,
+      forceNew: true,
+      autoConnect: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      maxReconnectionAttempts: 5
     });
 
     // Store user ID on socket instance to track changes
     newSocket.userId = user._id || user.id;
 
-    // Connection events
+    // Connection events - Silent for production
     newSocket.on('connect', () => {
-      console.log('🔗 WebSocket connected');
       setConnected(true);
+      setError(null);
     });
 
-    newSocket.on('disconnect', () => {
-      console.log('❌ WebSocket disconnected');
+    newSocket.on('disconnect', (reason) => {
       setConnected(false);
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error.message);
       setConnected(false);
-      
-      // Handle JWT authentication errors
-      if (error.message?.includes('Invalid token signature') || 
-          error.message?.includes('Token expired')) {
-        console.warn('Token authentication failed, user needs to re-login');
-        // You could trigger a re-login here if needed
-        // For now, just log the issue
-      }
+      setError(error.message);
     });
 
-    // Real-time data events
+    newSocket.on('reconnect', (attemptNumber) => {
+      setConnected(true);
+      setError(null);
+    });
+
+    newSocket.on('reconnect_error', (error) => {
+      setError(`Reconnection failed: ${error.message}`);
+    });
+
+    newSocket.on('reconnect_failed', () => {
+      setError('Connection failed. Please refresh the page.');
+    });
+
+    // Real-time data events - Silent mode
     newSocket.on('users:online', (users) => {
       setOnlineUsers(users);
     });
@@ -102,33 +142,27 @@ export const WebSocketProvider = ({ children }) => {
     });
 
     newSocket.on('attendance:update', (data) => {
-      console.log('📍 Attendance update:', data);
-      // Handle attendance updates
+      // Handle attendance updates silently
     });
 
     newSocket.on('worksheet:update', (data) => {
-      console.log('📝 Worksheet update:', data);
-      // Handle worksheet updates
+      // Handle worksheet updates silently
     });
 
     newSocket.on('leave:request', (data) => {
-      console.log('🏖️ Leave request:', data);
-      // Handle leave requests
+      // Handle leave requests silently
     });
 
     newSocket.on('announcement', (announcement) => {
-      console.log('📢 System announcement:', announcement);
-      // Show announcement to user
+      // Show announcement to user silently
     });
 
     newSocket.on('user:typing', (data) => {
-      console.log('💬 User typing:', data);
-      // Handle typing indicators
+      // Handle typing indicators silently
     });
 
     newSocket.on('user:offline', (data) => {
-      console.log('👋 User went offline:', data);
-      // Update online users list
+      // Update online users list silently
       setOnlineUsers(prev => prev.filter(u => u.user._id !== data.user._id));
     });
 
@@ -192,6 +226,7 @@ export const WebSocketProvider = ({ children }) => {
     onlineUsers,
     notifications,
     leaderboard,
+    error,
     sendAttendanceUpdate,
     sendWorksheetUpdate,
     sendLeaveRequest,

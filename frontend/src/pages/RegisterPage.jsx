@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Link, useNavigate } from 'react-router-dom';
+import RoleAutocomplete from '../components/RoleAutocomplete';
 import api from '../lib/api';
 
 const RegisterPage = () => {
@@ -17,24 +18,11 @@ const RegisterPage = () => {
     password: '',
     confirmPassword: '',
     role: '',
-    department: '',
-    position: ''
+    customRole: '',
+    department: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const roles = [
-    'Employee',
-    'Team Lead',
-    'Software developer trainee',
-    'Associate software developer',
-    'Full stack developer',
-    'Dot net developer',
-    'UI UX designer',
-    'Flutter developer',
-    'React native developer',
-    'Java developer'
-  ];
 
   const departments = [
     'Engineering',
@@ -56,20 +44,19 @@ const RegisterPage = () => {
     });
   };
 
-  const handleSelectChange = (name, value) => {
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     // Basic validation
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.role || !formData.position || !formData.department) {
-      setError('Please fill in all required fields (First Name, Last Name, Email, Password, Role, Position, and Department)');
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.role || !formData.department) {
+      setError('Please fill in all required fields (First Name, Last Name, Email, Password, Role, and Department)');
+      return;
+    }
+
+    // Validate custom role if "Other" is selected
+    if (formData.role === 'Other' && !formData.customRole) {
+      setError('Please specify your custom role when "Other" is selected');
       return;
     }
 
@@ -91,16 +78,17 @@ const RegisterPage = () => {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        department: formData.department,
-        position: formData.position
+        customRole: formData.customRole,
+        department: formData.department
       });
 
       if (response.data.success) {
-        // Registration successful - redirect to login with success message
+        // Registration successful - redirect to login with approval message
         navigate('/login', { 
           state: { 
-            message: 'Registration successful! 🎉 Welcome email sent to your inbox. You can now login with your credentials.',
-            type: 'success'
+            message: '🎉 Registration successful! Please wait for admin approval before you can login. You will be notified once approved.',
+            type: 'success',
+            details: response.data.message
           } 
         });
       }
@@ -209,37 +197,17 @@ const RegisterPage = () => {
               <Label htmlFor="role" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Role *
               </Label>
-              <Select value={formData.role} onValueChange={(value) => handleSelectChange('role', value)}>
-                <SelectTrigger className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500">
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="position" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Position *
-              </Label>
-              <div className="relative">
-                <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="position"
-                  name="position"
-                  type="text"
-                  placeholder="Enter your position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  className="pl-10 h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500"
-                  required
-                />
-              </div>
+              <RoleAutocomplete
+                value={formData.role}
+                onChange={(role) => setFormData({ ...formData, role })}
+                onCustomRoleChange={(customRole) => setFormData({ ...formData, customRole })}
+                customRole={formData.customRole}
+                placeholder="Type to search roles (e.g., 'Associate', 'Data', 'Frontend')..."
+                required
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Start typing to see role suggestions, or select "Other" to enter a custom role
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -248,7 +216,7 @@ const RegisterPage = () => {
               </Label>
               <div className="relative">
                 <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
-                <Select value={formData.department} onValueChange={(value) => handleSelectChange('department', value)}>
+                <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
                   <SelectTrigger className="pl-10 h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500">
                     <SelectValue placeholder="Select department (required)" />
                   </SelectTrigger>
@@ -347,7 +315,7 @@ const RegisterPage = () => {
           <div className="mt-4 p-3 bg-blue-50 dark:bg-gray-700/50 rounded-lg border border-blue-100 dark:border-gray-600">
             <p className="text-xs text-gray-600 dark:text-gray-300 text-center">
               <strong className="text-blue-700 dark:text-blue-300">Available Roles Include:</strong><br />
-              Traditional roles (Employee, Manager, HR, Admin) and technical positions 
+              Traditional roles (Employee, Intern, Manager, HR, Admin) and technical positions 
               (Software Developer Trainee, Full Stack Developer, UI/UX Designer, etc.)
             </p>
           </div>
