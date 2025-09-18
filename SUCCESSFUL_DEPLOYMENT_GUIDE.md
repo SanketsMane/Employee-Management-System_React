@@ -164,6 +164,10 @@ mkdir -p ~/ems && cd ~/ems
 ### **Step 2: Deploy Containers**
 
 ```bash
+# IMPORTANT: Clean up any existing containers first
+docker-compose down --remove-orphans
+docker container prune -f
+
 # Create docker-compose.yml with the working configuration above
 # Then run:
 docker-compose pull
@@ -189,6 +193,14 @@ curl -I http://your-domain.com
 ---
 
 ## 🔧 **Troubleshooting**
+
+### **Container Name Conflicts**
+```bash
+# If you get "container name already in use" error:
+docker-compose down --remove-orphans
+docker container rm -f ems-frontend-prod ems-backend-prod
+docker-compose up -d
+```
 
 ### **Port 80 Already in Use**
 ```bash
