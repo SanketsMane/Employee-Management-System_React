@@ -197,8 +197,19 @@ curl -I http://your-domain.com
 ### **Container Name Conflicts**
 ```bash
 # If you get "container name already in use" error:
-docker-compose down --remove-orphans
-docker container rm -f ems-frontend-prod ems-backend-prod
+# First, check what containers are running:
+docker ps -a
+
+# Remove ALL containers (including stopped ones):
+docker container rm -f $(docker container ls -aq) 2>/dev/null || true
+
+# Remove networks:
+docker network rm $(docker network ls -q) 2>/dev/null || true
+
+# Clean up everything:
+docker system prune -af
+
+# Then deploy:
 docker-compose up -d
 ```
 
