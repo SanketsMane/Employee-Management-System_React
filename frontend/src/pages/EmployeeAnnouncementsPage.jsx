@@ -133,7 +133,7 @@ const EmployeeAnnouncementsPage = () => {
       
       // Update local state
       setAnnouncements(prev => 
-        prev.map(ann => 
+        (Array.isArray(prev) ? prev : []).map(ann => 
           ann._id === announcementId 
             ? { ...ann, isRead: true, readAt: new Date().toISOString() }
             : ann
@@ -154,7 +154,7 @@ const EmployeeAnnouncementsPage = () => {
       
       // Update local state
       setAnnouncements(prev => 
-        prev.map(ann => 
+        (Array.isArray(prev) ? prev : []).map(ann => 
           ann._id === announcementId 
             ? { ...ann, isAcknowledged: true, acknowledgedAt: new Date().toISOString() }
             : ann

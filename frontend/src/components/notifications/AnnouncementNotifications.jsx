@@ -126,7 +126,7 @@ const AnnouncementNotifications = () => {
       await api.post(`/announcements/${announcementId}/read`);
       
       setNotifications(prev =>
-        prev.map(notification =>
+        (Array.isArray(prev) ? prev : []).map(notification =>
           notification._id === announcementId
             ? { ...notification, isRead: true, readAt: new Date().toISOString() }
             : notification
@@ -147,7 +147,7 @@ const AnnouncementNotifications = () => {
       await api.post(`/announcements/${announcementId}/acknowledge`);
       
       setNotifications(prev =>
-        prev.map(notification =>
+        (Array.isArray(prev) ? prev : []).map(notification =>
           notification._id === announcementId
             ? { ...notification, isAcknowledged: true, acknowledgedAt: new Date().toISOString() }
             : notification
@@ -183,7 +183,7 @@ const AnnouncementNotifications = () => {
       await Promise.all(unreadIds.map(id => api.post(`/announcements/${id}/read`)));
       
       setNotifications(prev =>
-        prev.map(notification => ({ ...notification, isRead: true, readAt: new Date().toISOString() }))
+        (Array.isArray(prev) ? prev : []).map(notification => ({ ...notification, isRead: true, readAt: new Date().toISOString() }))
       );
       
       setUnreadCount(0);

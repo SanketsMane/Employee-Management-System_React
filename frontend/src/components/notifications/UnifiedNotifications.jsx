@@ -212,7 +212,7 @@ const UnifiedNotifications = () => {
   const markNotificationAsRead = async (notificationId) => {
     try {
       await api.put(`/notifications/${notificationId}/read`);
-      setNotifications(prev => prev.map(n => 
+      setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => 
         n._id === notificationId ? { ...n, isRead: true } : n
       ));
       setUnreadNotificationCount(prev => Math.max(0, prev - 1));
@@ -238,7 +238,7 @@ const UnifiedNotifications = () => {
   const markAnnouncementAsRead = async (announcementId) => {
     try {
       await api.post(`/announcements/${announcementId}/read`);
-      setAnnouncements(prev => prev.map(a => 
+      setAnnouncements(prev => (Array.isArray(prev) ? prev : []).map(a => 
         a._id === announcementId ? { ...a, isRead: true, readAt: new Date().toISOString() } : a
       ));
       setUnreadAnnouncementCount(prev => Math.max(0, prev - 1));
@@ -250,7 +250,7 @@ const UnifiedNotifications = () => {
   const handleAcknowledgeAnnouncement = async (announcementId) => {
     try {
       await api.post(`/announcements/${announcementId}/acknowledge`);
-      setAnnouncements(prev => prev.map(a => 
+      setAnnouncements(prev => (Array.isArray(prev) ? prev : []).map(a => 
         a._id === announcementId ? { ...a, isAcknowledged: true, acknowledgedAt: new Date().toISOString() } : a
       ));
       toast.success('Announcement acknowledged');
@@ -264,7 +264,7 @@ const UnifiedNotifications = () => {
     try {
       // Mark all notifications as read
       await api.put('/notifications/mark-all-read');
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => ({ ...n, isRead: true })));
       setUnreadNotificationCount(0);
 
       // Mark all announcements as read
@@ -274,7 +274,7 @@ const UnifiedNotifications = () => {
       
       if (unreadAnnouncementIds.length > 0) {
         await Promise.all(unreadAnnouncementIds.map(id => api.post(`/announcements/${id}/read`)));
-        setAnnouncements(prev => prev.map(a => ({ ...a, isRead: true, readAt: new Date().toISOString() })));
+        setAnnouncements(prev => (Array.isArray(prev) ? prev : []).map(a => ({ ...a, isRead: true, readAt: new Date().toISOString() })));
         setUnreadAnnouncementCount(0);
       }
 
