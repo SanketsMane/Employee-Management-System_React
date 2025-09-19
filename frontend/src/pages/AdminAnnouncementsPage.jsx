@@ -845,7 +845,7 @@ const AdminAnnouncementsPage = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {announcements.map((announcement) => (
+          {Array.isArray(announcements) && announcements.map((announcement) => (
             <AnnouncementCard key={announcement._id} announcement={announcement} />
           ))}
         </div>

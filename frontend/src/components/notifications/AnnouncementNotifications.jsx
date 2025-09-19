@@ -324,7 +324,7 @@ const AnnouncementNotifications = () => {
             </div>
           ) : (
             <div className="space-y-1">
-              {notifications.map((notification) => (
+              {Array.isArray(notifications) && notifications.map((notification) => (
                 <NotificationItem key={notification._id} notification={notification} />
               ))}
             </div>

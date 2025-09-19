@@ -218,7 +218,7 @@ const Sidebar = () => {
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {filteredNavigation.map((item) => {
+          {Array.isArray(filteredNavigation) && filteredNavigation.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
 

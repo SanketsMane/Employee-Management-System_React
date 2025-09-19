@@ -291,7 +291,7 @@ const UsersPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
+                  {Array.isArray(users) && users.map((user) => (
                     <tr key={user._id} className="border-b hover:bg-gray-50">
                       <td className="p-3">
                         <div>

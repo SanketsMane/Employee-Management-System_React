@@ -502,7 +502,7 @@ const UnifiedNotifications = () => {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {allItems.map((item) => (
+                  {Array.isArray(allItems) && allItems.map((item) => (
                     <NotificationItem key={`${item.itemType}-${item._id}`} item={item} />
                   ))}
                 </div>
@@ -517,7 +517,7 @@ const UnifiedNotifications = () => {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {notifications.map((notification) => (
+                  {Array.isArray(notifications) && notifications.map((notification) => (
                     <NotificationItem key={`notification-${notification._id}`} item={{...notification, itemType: 'notification'}} />
                   ))}
                 </div>
@@ -532,7 +532,7 @@ const UnifiedNotifications = () => {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {announcements.map((announcement) => (
+                  {Array.isArray(announcements) && announcements.map((announcement) => (
                     <NotificationItem key={`announcement-${announcement._id}`} item={{...announcement, itemType: 'announcement'}} />
                   ))}
                 </div>
