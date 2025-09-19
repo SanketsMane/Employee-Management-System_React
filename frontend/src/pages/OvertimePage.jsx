@@ -397,7 +397,7 @@ const OvertimePage = () => {
                       onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      {urgencyLevels.map(level => (
+                      {Array.isArray(urgencyLevels) && urgencyLevels.map(level => (
                         <option key={level} value={level}>{level}</option>
                       ))}
                     </select>
@@ -412,7 +412,7 @@ const OvertimePage = () => {
                       onChange={(e) => setFormData({...formData, overtimeType: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      {overtimeTypes.map(type => (
+                      {Array.isArray(overtimeTypes) && overtimeTypes.map(type => (
                         <option key={type} value={type}>{type}</option>
                       ))}
                     </select>
@@ -427,7 +427,7 @@ const OvertimePage = () => {
                       onChange={(e) => setFormData({...formData, location: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      {locations.map(loc => (
+                      {Array.isArray(locations) && locations.map(loc => (
                         <option key={loc} value={loc}>{loc}</option>
                       ))}
                     </select>
@@ -515,7 +515,7 @@ const OvertimePage = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {overtimeRequests.map((request) => (
+              {Array.isArray(overtimeRequests) && overtimeRequests.map((request) => (
                 <div
                   key={request._id}
                   className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
