@@ -139,16 +139,16 @@ function AppContent() {
         <Route 
           path="/login" 
           element={
-            <PublicRoute redirectIfAuthenticated={false}>
-              <LandingPage openLogin={true} />
+            <PublicRoute>
+              <Login />
             </PublicRoute>
           }
         />
         <Route 
           path="/register" 
           element={
-            <PublicRoute redirectIfAuthenticated={false}>
-              <LandingPage openLogin={true} />
+            <PublicRoute>
+              <RegisterPage />
             </PublicRoute>
           } 
         />
