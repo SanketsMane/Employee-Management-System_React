@@ -272,7 +272,7 @@ const AdminOvertimePage = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">All Status</option>
-                {statusOptions.map(status => (
+                {Array.isArray(statusOptions) && statusOptions.map(status => (
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
@@ -286,7 +286,7 @@ const AdminOvertimePage = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">All Departments</option>
-                {departments.map(dept => (
+                {Array.isArray(departments) && departments.map(dept => (
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
               </select>
@@ -300,7 +300,7 @@ const AdminOvertimePage = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">All Employees</option>
-                {allEmployees.map(emp => (
+                {Array.isArray(allEmployees) && allEmployees.map(emp => (
                   <option key={emp._id} value={emp._id}>
                     {emp.firstName} {emp.lastName} - {emp.employeeId}
                   </option>
@@ -316,7 +316,7 @@ const AdminOvertimePage = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">All Urgency</option>
-                {urgencyLevels.map(level => (
+                {Array.isArray(urgencyLevels) && urgencyLevels.map(level => (
                   <option key={level} value={level}>{level}</option>
                 ))}
               </select>
@@ -380,7 +380,7 @@ const AdminOvertimePage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {overtimeRequests.map((request) => (
+                  {Array.isArray(overtimeRequests) && overtimeRequests.map((request) => (
                     <tr key={request._id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="p-4">
                         <div>

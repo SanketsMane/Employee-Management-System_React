@@ -221,7 +221,7 @@ const RegisterPage = () => {
                     <SelectValue placeholder="Select department (required)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((dept) => (
+                    {Array.isArray(departments) && departments.map((dept) => (
                       <SelectItem key={dept} value={dept}>
                         {dept}
                       </SelectItem>
