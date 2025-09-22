@@ -164,11 +164,23 @@ exports.clockIn = async (req, res) => {
     // Create notification
     console.log('🔔 Creating notification');
     try {
+      // Get company settings for timezone
+      const companySettings = await CompanySettings.findOne({ companyName: req.user.company });
+      const timezone = companySettings?.timezone || 'Asia/Kolkata';
+      
+      // Format time with proper timezone
+      const formattedTime = clockInTime.toLocaleTimeString('en-US', {
+        timeZone: timezone,
+        hour12: true,
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
       await createNotification(
         userId,                    // senderId
         userId,                    // recipients
         'Clock In Successful',     // title
-        `You clocked in at ${clockInTime.toLocaleTimeString()}`, // message
+        `You clocked in at ${formattedTime}`, // message
         'success',                 // type
         'Medium',                  // priority
         '/attendance'              // actionUrl
@@ -262,6 +274,33 @@ exports.clockOut = async (req, res) => {
       userAgent: req.get('User-Agent'),
       success: true
     });
+
+    // Create clock out notification
+    try {
+      // Get company settings for timezone
+      const companySettings = await CompanySettings.findOne({ companyName: req.user.company });
+      const timezone = companySettings?.timezone || 'Asia/Kolkata';
+      
+      // Format time with proper timezone
+      const formattedTime = clockOutTime.toLocaleTimeString('en-US', {
+        timeZone: timezone,
+        hour12: true,
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      await createNotification(
+        userId,                    // senderId
+        userId,                    // recipients
+        'Clock Out Successful',    // title
+        `You clocked out at ${formattedTime}. Total worked: ${attendance.totalWorkedHours.toFixed(2)} hours`, // message
+        'success',                 // type
+        'Medium',                  // priority
+        '/attendance'              // actionUrl
+      );
+    } catch (notificationError) {
+      console.warn('⚠️ Clock out notification creation failed:', notificationError);
+    }
 
     const updatedAttendance = await Attendance.findById(attendance._id)
       .populate('employee', 'firstName lastName employeeId');

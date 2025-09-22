@@ -199,8 +199,12 @@ const RegisterPage = () => {
               </Label>
               <RoleAutocomplete
                 value={formData.role}
-                onChange={(role) => setFormData({ ...formData, role })}
-                onCustomRoleChange={(customRole) => setFormData({ ...formData, customRole })}
+                onChange={(role) => {
+                  setFormData(prev => ({ ...prev, role: role }));
+                }}
+                onCustomRoleChange={(customRole) => {
+                  setFormData(prev => ({ ...prev, customRole: customRole }));
+                }}
                 customRole={formData.customRole}
                 placeholder="Type to search roles (e.g., 'Associate', 'Data', 'Frontend')..."
                 required
@@ -294,31 +298,23 @@ const RegisterPage = () => {
                 'Create Account'
               )}
             </Button>
-          </form>
 
-          <div className="mt-6 text-center space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Already have an account?{' '}
-              <Link to="/login" className="font-medium text-blue-600 hover:text-purple-600 transition-colors duration-200">
-                Sign in here
-              </Link>
-            </p>
-            
-            {/* Formonex Footer */}
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Powered by <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Formonex</span> Employee Management System
+            <div className="mt-6 text-center space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Already have an account?{' '}
+                <Link to="/login" className="font-medium text-blue-600 hover:text-purple-600 transition-colors duration-200">
+                  Sign in here
+                </Link>
               </p>
+              
+              {/* Formonex Footer */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Powered by <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Formonex</span> Employee Management System
+                </p>
+              </div>
             </div>
-          </div>
-
-          <div className="mt-4 p-3 bg-blue-50 dark:bg-gray-700/50 rounded-lg border border-blue-100 dark:border-gray-600">
-            <p className="text-xs text-gray-600 dark:text-gray-300 text-center">
-              <strong className="text-blue-700 dark:text-blue-300">Available Roles Include:</strong><br />
-              Traditional roles (Employee, Intern, Manager, HR, Admin) and technical positions 
-              (Software Developer Trainee, Full Stack Developer, UI/UX Designer, etc.)
-            </p>
-          </div>
+          </form>
         </CardContent>
       </Card>
     </div>

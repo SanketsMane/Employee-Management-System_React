@@ -213,9 +213,12 @@ const UnifiedNotifications = () => {
     try {
       await api.put(`/notifications/${notificationId}/read`);
       setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => 
-        n._id === notificationId ? { ...n, isRead: true } : n
+        n._id === notificationId ? { ...n, isRead: true, readAt: new Date().toISOString() } : n
       ));
       setUnreadNotificationCount(prev => Math.max(0, prev - 1));
+      
+      // Refresh notifications to ensure consistency
+      await fetchNotificationCount();
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -264,7 +267,7 @@ const UnifiedNotifications = () => {
     try {
       // Mark all notifications as read
       await api.put('/notifications/mark-all-read');
-      setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => ({ ...n, isRead: true })));
+      setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() })));
       setUnreadNotificationCount(0);
 
       // Mark all announcements as read
@@ -277,6 +280,10 @@ const UnifiedNotifications = () => {
         setAnnouncements(prev => (Array.isArray(prev) ? prev : []).map(a => ({ ...a, isRead: true, readAt: new Date().toISOString() })));
         setUnreadAnnouncementCount(0);
       }
+
+      // Refresh counts to ensure consistency
+      await fetchNotificationCount();
+      await fetchAnnouncementCount();
 
       toast.success('All notifications marked as read');
     } catch (error) {

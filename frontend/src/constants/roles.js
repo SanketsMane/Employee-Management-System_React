@@ -105,18 +105,32 @@ export const ROLE_CATEGORIES = {
 };
 
 // Flat array of all roles for easy filtering and searching
-export const ALL_ROLES = Object.values(ROLE_CATEGORIES)
-  .flatMap(category => category.roles)
-  .concat(['Other']);
+export const ALL_ROLES = (() => {
+  try {
+    const roles = Object.values(ROLE_CATEGORIES || {})
+      .flatMap(category => (category && category.roles) ? category.roles : [])
+      .concat(['Other']);
+    return Array.isArray(roles) ? roles : ['Other'];
+  } catch (error) {
+    console.warn('Error creating ALL_ROLES:', error);
+    return ['Other'];
+  }
+})();
 
 // Get roles that match a search query
 export const searchRoles = (query) => {
-  if (!query) return ALL_ROLES;
-  
-  const lowercaseQuery = query.toLowerCase();
-  return ALL_ROLES.filter(role => 
-    role.toLowerCase().includes(lowercaseQuery)
-  );
+  try {
+    if (!query) return ALL_ROLES || [];
+    
+    const lowercaseQuery = query.toLowerCase();
+    const results = (ALL_ROLES || []).filter(role => 
+      role && role.toLowerCase && role.toLowerCase().includes(lowercaseQuery)
+    );
+    return Array.isArray(results) ? results : [];
+  } catch (error) {
+    console.warn('Error in searchRoles:', error);
+    return [];
+  }
 };
 
 // Get role category

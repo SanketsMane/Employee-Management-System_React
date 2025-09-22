@@ -36,6 +36,7 @@ import AdminAnnouncementsPage from './pages/AdminAnnouncementsPage';
 import EmployeeAnnouncementsPage from './pages/EmployeeAnnouncementsPage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
 import SystemConfigPage from './pages/SystemConfigPage';
+import RoleDebugPage from './pages/RoleDebugPage';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 
@@ -153,6 +154,14 @@ function AppContent() {
           } 
         />
         <Route 
+          path="/debug-role" 
+          element={
+            <PublicRoute redirectIfAuthenticated={false}>
+              <RoleDebugPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
           path="/dashboard" 
           element={
             <ProtectedRoute>
@@ -184,7 +193,7 @@ function AppContent() {
                 <RoleBasedPageWrapper 
                   AdminComponent={AdminWorksheetPage}
                   RegularComponent={WorkSheetPage}
-                  requiresAdminAccess={true}
+                  requiresAdminAccess={false}
                 />
               </Layout>
             </ProtectedRoute>
@@ -198,7 +207,7 @@ function AppContent() {
                 <RoleBasedPageWrapper 
                   AdminComponent={AdminLeaveManagement}
                   RegularComponent={EmployeeLeaveManagement}
-                  requiresAdminAccess={true}
+                  requiresAdminAccess={false}
                 />
               </Layout>
             </ProtectedRoute>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, Users } from 'lucide-react';
-import { searchRoles, getRoleCategory } from '../constants/roles';
+import { searchRoles, getRoleCategory, ALL_ROLES } from '../constants/roles';
 
 const RoleAutocomplete = ({ 
   value = '', 
@@ -13,14 +13,16 @@ const RoleAutocomplete = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredRoles, setFilteredRoles] = useState([]);
+  // Defensive programming: initialize with ALL_ROLES if available, otherwise empty array
+  const [filteredRoles, setFilteredRoles] = useState(Array.isArray(ALL_ROLES) ? ALL_ROLES : []);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
     const filtered = searchRoles(searchQuery);
-    setFilteredRoles(filtered);
+    // Defensive programming: ensure filtered is always an array
+    setFilteredRoles(Array.isArray(filtered) ? filtered : []);
     setHighlightedIndex(-1);
   }, [searchQuery]);
 
@@ -45,8 +47,12 @@ const RoleAutocomplete = ({
     setIsOpen(true);
     
     // If user is typing and current value is not in the list, clear selection
-    if (query && !searchRoles(query).includes(value)) {
-      onChange('');
+    if (query) {
+      const searchResults = searchRoles(query);
+      const validRoles = Array.isArray(searchResults) ? searchResults : [];
+      if (!validRoles.includes(value)) {
+        onChange('');
+      }
     }
   };
 
@@ -75,18 +81,20 @@ const RoleAutocomplete = ({
       case 'ArrowDown':
         e.preventDefault();
         setHighlightedIndex(prev => 
-          prev < filteredRoles.length - 1 ? prev + 1 : 0
+          Array.isArray(filteredRoles) && filteredRoles.length > 0 ? 
+          (prev < filteredRoles.length - 1 ? prev + 1 : 0) : 0
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
         setHighlightedIndex(prev => 
-          prev > 0 ? prev - 1 : filteredRoles.length - 1
+          Array.isArray(filteredRoles) && filteredRoles.length > 0 ? 
+          (prev > 0 ? prev - 1 : filteredRoles.length - 1) : 0
         );
         break;
       case 'Enter':
         e.preventDefault();
-        if (highlightedIndex >= 0 && filteredRoles[highlightedIndex]) {
+        if (highlightedIndex >= 0 && Array.isArray(filteredRoles) && filteredRoles[highlightedIndex]) {
           handleRoleSelect(filteredRoles[highlightedIndex]);
         }
         break;
@@ -142,7 +150,7 @@ const RoleAutocomplete = ({
           ref={dropdownRef}
           className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
         >
-          {filteredRoles.length > 0 ? (
+          {Array.isArray(filteredRoles) && filteredRoles.length > 0 ? (
             <div className="py-1">
               {filteredRoles.map((role, index) => (
                 <div

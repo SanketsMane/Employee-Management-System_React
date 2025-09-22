@@ -53,9 +53,12 @@ const NotificationDropdown = () => {
     try {
       await api.put(`/notifications/${notificationId}/read`);
       setNotifications(notifications.map(notif => 
-        notif._id === notificationId ? { ...notif, isRead: true } : notif
+        notif._id === notificationId ? { ...notif, isRead: true, readAt: new Date().toISOString() } : notif
       ));
       setUnreadCount(Math.max(0, unreadCount - 1));
+      
+      // Refresh unread count to ensure consistency
+      await fetchUnreadCount();
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -64,8 +67,11 @@ const NotificationDropdown = () => {
   const markAllAsRead = async () => {
     try {
       await api.put('/notifications/mark-all-read');
-      setNotifications(notifications.map(notif => ({ ...notif, isRead: true })));
+      setNotifications(notifications.map(notif => ({ ...notif, isRead: true, readAt: new Date().toISOString() })));
       setUnreadCount(0);
+      
+      // Refresh unread count to ensure consistency
+      await fetchUnreadCount();
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
