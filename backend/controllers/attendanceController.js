@@ -164,16 +164,30 @@ exports.clockIn = async (req, res) => {
     // Create notification
     console.log('🔔 Creating notification');
     try {
-      // Get company settings for timezone
-      const companySettings = await CompanySettings.findOne({ companyName: req.user.company });
-      const timezone = companySettings?.timezone || 'Asia/Kolkata';
+      // Get company settings for timezone - use a more reliable approach
+      let timezone = 'Asia/Kolkata'; // Default timezone
+      try {
+        const companySettings = await CompanySettings.findOne({});
+        if (companySettings?.timezone) {
+          timezone = companySettings.timezone;
+        }
+      } catch (settingsError) {
+        console.warn('Could not fetch company settings, using default timezone');
+      }
       
-      // Format time with proper timezone
-      const formattedTime = clockInTime.toLocaleTimeString('en-US', {
+      // Format time with proper timezone - use more specific formatting
+      const formattedTime = clockInTime.toLocaleTimeString('en-IN', {
         timeZone: timezone,
         hour12: true,
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      
+      console.log('Clock in time details:', {
+        originalTime: clockInTime.toISOString(),
+        timezone: timezone,
+        formattedTime: formattedTime
       });
       
       await createNotification(
@@ -277,16 +291,30 @@ exports.clockOut = async (req, res) => {
 
     // Create clock out notification
     try {
-      // Get company settings for timezone
-      const companySettings = await CompanySettings.findOne({ companyName: req.user.company });
-      const timezone = companySettings?.timezone || 'Asia/Kolkata';
+      // Get company settings for timezone - use a more reliable approach
+      let timezone = 'Asia/Kolkata'; // Default timezone
+      try {
+        const companySettings = await CompanySettings.findOne({});
+        if (companySettings?.timezone) {
+          timezone = companySettings.timezone;
+        }
+      } catch (settingsError) {
+        console.warn('Could not fetch company settings, using default timezone');
+      }
       
-      // Format time with proper timezone
-      const formattedTime = clockOutTime.toLocaleTimeString('en-US', {
+      // Format time with proper timezone - use more specific formatting
+      const formattedTime = clockOutTime.toLocaleTimeString('en-IN', {
         timeZone: timezone,
         hour12: true,
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      
+      console.log('Clock out time details:', {
+        originalTime: clockOutTime.toISOString(),
+        timezone: timezone,
+        formattedTime: formattedTime
       });
       
       await createNotification(

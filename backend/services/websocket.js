@@ -116,6 +116,57 @@ class WebSocketService {
         });
       });
 
+      // Chat-specific event handlers
+      socket.on('join_chat', (chatId) => {
+        console.log(`User ${socket.user.firstName} ${socket.user.lastName} joined chat: ${chatId}`);
+        socket.join(`chat:${chatId}`);
+        socket.currentChatId = chatId;
+      });
+
+      socket.on('leave_chat', (chatId) => {
+        console.log(`User ${socket.user.firstName} ${socket.user.lastName} left chat: ${chatId}`);
+        socket.leave(`chat:${chatId}`);
+        socket.currentChatId = null;
+      });
+
+      socket.on('send_message', (data) => {
+        console.log(`Message from ${socket.user.firstName} ${socket.user.lastName} in chat ${data.chatId}:`, data);
+        // Broadcast message to all users in the chat room
+        socket.to(`chat:${data.chatId}`).emit('new_message', {
+          ...data,
+          sender: socket.user,
+          timestamp: new Date()
+        });
+      });
+
+      socket.on('typing_start', (chatId) => {
+        console.log(`User ${socket.user.firstName} ${socket.user.lastName} started typing in chat: ${chatId}`);
+        socket.to(`chat:${chatId}`).emit('user_typing', {
+          userId: socket.userId,
+          user: socket.user,
+          chatId
+        });
+      });
+
+      socket.on('typing_stop', (chatId) => {
+        console.log(`User ${socket.user.firstName} ${socket.user.lastName} stopped typing in chat: ${chatId}`);
+        socket.to(`chat:${chatId}`).emit('user_stop_typing', {
+          userId: socket.userId,
+          user: socket.user,
+          chatId
+        });
+      });
+
+      socket.on('mark_message_read', (data) => {
+        console.log(`User ${socket.user.firstName} ${socket.user.lastName} marked message as read:`, data);
+        socket.to(`chat:${data.chatId}`).emit('message_read', {
+          messageId: data.messageId,
+          readBy: socket.userId,
+          chatId: data.chatId,
+          timestamp: new Date()
+        });
+      });
+
       // Handle disconnect
       socket.on('disconnect', () => {
         console.log(`❌ User disconnected: ${socket.user.firstName} ${socket.user.lastName}`);
@@ -187,6 +238,25 @@ class WebSocketService {
   // Send notification to department
   sendNotificationToDepartment(department, notification) {
     this.io.to(`department:${department}`).emit('notification:new', notification);
+  }
+
+  // Chat utility functions
+  broadcastMessageToChat(chatId, message) {
+    this.io.to(`chat:${chatId}`).emit('new_message', message);
+  }
+
+  notifyTypingInChat(chatId, userId, isTyping) {
+    const eventName = isTyping ? 'user_typing' : 'user_stop_typing';
+    this.io.to(`chat:${chatId}`).emit(eventName, { userId, chatId });
+  }
+
+  markMessageAsRead(chatId, messageId, readBy) {
+    this.io.to(`chat:${chatId}`).emit('message_read', {
+      messageId,
+      readBy,
+      chatId,
+      timestamp: new Date()
+    });
   }
 
   // Broadcast system-wide announcement

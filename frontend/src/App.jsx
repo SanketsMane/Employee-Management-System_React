@@ -37,6 +37,7 @@ import EmployeeAnnouncementsPage from './pages/EmployeeAnnouncementsPage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
 import SystemConfigPage from './pages/SystemConfigPage';
 import RoleDebugPage from './pages/RoleDebugPage';
+import ChatPage from './pages/ChatPage';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 
@@ -397,6 +398,16 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <SystemConfigPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/chat" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ChatPage />
               </Layout>
             </ProtectedRoute>
           } 

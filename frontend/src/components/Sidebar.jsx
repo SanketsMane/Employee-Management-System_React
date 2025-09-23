@@ -19,7 +19,8 @@ import {
   ClipboardList,
   Timer,
   Bug,
-  Megaphone
+  Megaphone,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -69,6 +70,12 @@ const Sidebar = () => {
       title: 'Announcements',
       href: '/announcements',
       icon: Megaphone,
+      roles: ['all']
+    },
+    {
+      title: 'Messages',
+      href: '/chat',
+      icon: MessageSquare,
       roles: ['all']
     },
     {

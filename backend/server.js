@@ -13,6 +13,7 @@ dotenv.config();
 const connectDB = require('./config/db');
 const { initializeCronJobs } = require('./utils/emailService');
 const webSocketService = require('./services/websocket');
+const chatWebSocketService = require('./services/chatWebSocket');
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');
@@ -31,6 +32,8 @@ const bugReportRoutes = require('./routes/bugReportRoutes');
 const overtimeRoutes = require('./routes/overtimeRoutes');
 const systemConfigRoutes = require('./routes/systemConfigRoutes');
 const contactRoutes = require('./routes/contactRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 // Connect to database
 connectDB();
@@ -39,7 +42,10 @@ const app = express();
 const server = http.createServer(app);
 
 // Initialize WebSocket service
-webSocketService.initialize(server);
+// webSocketService.initialize(server); // Commented out to avoid conflict with chat WebSocket
+
+// Initialize Chat WebSocket service
+chatWebSocketService.initialize(server);
 
 // Trust proxy (required for rate limiting when behind reverse proxy)
 app.set('trust proxy', 1);
@@ -215,6 +221,23 @@ app.use('/api/bug-reports', bugReportRoutes);
 app.use('/api/system/config', systemConfigRoutes);
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/contact', contactRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/chat', chatRoutes);
+
+// Add groups endpoint for easier access
+const groupsRouter = express.Router();
+const groupController = require('./controllers/groupController');
+const { protect } = require('./utils/roleMiddleware');
+
+groupsRouter.post('/', protect, groupController.createGroup);
+groupsRouter.get('/', protect, groupController.getUserGroups);
+groupsRouter.get('/:groupId', protect, groupController.getGroupDetails);
+groupsRouter.post('/:groupId/members', protect, groupController.addGroupMembers);
+groupsRouter.delete('/:groupId/members/:userId', protect, groupController.removeGroupMember);
+groupsRouter.put('/:groupId/settings', protect, groupController.updateGroupSettings);
+groupsRouter.delete('/:groupId', protect, groupController.deleteGroup);
+
+app.use('/api/groups', groupsRouter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

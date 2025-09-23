@@ -213,6 +213,46 @@ export const WebSocketProvider = ({ children }) => {
     }
   };
 
+  // Chat-specific functions
+  const joinChat = (chatId) => {
+    if (socket && connected) {
+      console.log('WebSocket: Joining chat', chatId);
+      socket.emit('join_chat', chatId);
+    }
+  };
+
+  const leaveChat = (chatId) => {
+    if (socket && connected) {
+      console.log('WebSocket: Leaving chat', chatId);
+      socket.emit('leave_chat', chatId);
+    }
+  };
+
+  const sendMessage = (messageData) => {
+    if (socket && connected) {
+      console.log('WebSocket: Sending message', messageData);
+      socket.emit('send_message', messageData);
+    }
+  };
+
+  const startTypingInChat = (chatId) => {
+    if (socket && connected) {
+      socket.emit('typing_start', chatId);
+    }
+  };
+
+  const stopTypingInChat = (chatId) => {
+    if (socket && connected) {
+      socket.emit('typing_stop', chatId);
+    }
+  };
+
+  const markMessageAsRead = (messageId, chatId) => {
+    if (socket && connected) {
+      socket.emit('mark_message_read', { messageId, chatId });
+    }
+  };
+
   // Request notification permission on mount
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -232,7 +272,14 @@ export const WebSocketProvider = ({ children }) => {
     sendLeaveRequest,
     markNotificationAsRead,
     startTyping,
-    stopTyping
+    stopTyping,
+    // Chat functions
+    joinChat,
+    leaveChat,
+    sendMessage,
+    startTypingInChat,
+    stopTypingInChat,
+    markMessageAsRead
   };
 
   return (
