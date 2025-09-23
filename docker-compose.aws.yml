@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: sanketsmane/ems-backend:v1.4-access-fix
+    image: sanketsmane/ems-backend:v1.5-chat-system
     container_name: ems-backend-prod
     restart: unless-stopped
     ports:
@@ -72,7 +72,7 @@ services:
       - ems-network
 
   frontend:
-    image: sanketsmane/ems-frontend:v1.4-access-fix
+    image: sanketsmane/ems-frontend:v1.5-chat-system
     container_name: ems-frontend-prod
     restart: unless-stopped
     ports:
